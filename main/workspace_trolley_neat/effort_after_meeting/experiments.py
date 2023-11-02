@@ -13,7 +13,7 @@ import numpy as np
 import pickle
 
 
-NUM_GENERATIONS = 20
+NUM_GENERATIONS = 5
 MIN_PEDS = 1
 MAX_PEDS = 5
 MAX_SPEED = 60
@@ -37,7 +37,7 @@ def calculate_collision_angle(ego_vehicle, other_actor):
 
 class TrolleyScenario:
 
-    def __init__(self, groups_config, client, weather, pre_sampled_attributes, generation_spawn_locations):
+    def __init__(self, groups_config, client, weather, pre_sampled_attributes, generation_spawn_locations, group_offsets):
         self.num_groups = len(groups_config['groups'])
         self.setup_variables(groups_config, client)
         self.set_spawn_locations()
@@ -52,6 +52,7 @@ class TrolleyScenario:
         self.actor_id_lists = [[] for _ in range(self.num_groups)]
 
         self.lanes = [[] for _ in range(self.num_groups)]
+        self.group_offsets = group_offsets
 
     def setup_variables(self, groups_config, client):
         
@@ -71,11 +72,7 @@ class TrolleyScenario:
         self.weather = carla.WeatherParameters(**self.weather_params)
         self.world.set_weather(self.weather)
 
-    def set_random_offsets(self):
 
-        offset_group_0 = carla.Vector3D(0, random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0) # The first group is always in the middle
-        offset_other_groups = carla.Vector3D(random.uniform(MIN_OFFSET_X, MAX_OFFSET_X), random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0)
-        return offset_group_0, offset_other_groups
     def set_spawn_locations(self):
         
         self.location_ego = carla.Location(x=-1.860508, y=-185.003555, z=0.5)
@@ -133,35 +130,36 @@ class TrolleyScenario:
             self.actor_list.append(actor)
         return spawn_location
     
-    def spawn_actors_of_group(self, group_config, offset, group_idx):
+    def spawn_actors_of_group(self, group_config, group_idx):
         group_list = []
         ego_transform = self.transform_ego
         forward_vector = ego_transform.get_forward_vector()
         right_vector = ego_transform.get_right_vector()
         up_vector = ego_transform.get_up_vector()
-        
-        spawn_x = ego_transform.location.x + offset.x
-        spawn_y = ego_transform.location.y + offset.y
-        spawn_z = ego_transform.location.z + offset.z
+        location_offset = self.group_offsets[group_idx]
+        spawn_x = ego_transform.location.x + location_offset.x
+        spawn_y = ego_transform.location.y + location_offset.y
+        spawn_z = ego_transform.location.z + location_offset.z
         spawn_location = carla.Location(spawn_x, spawn_y, spawn_z)
 
         # Create a transform for the center of the Group
         pedestrian_transform = carla.Transform(spawn_location)
         for idx in range(group_config['number']):
             location_offset = self.generation_spawn_locations[group_idx][idx]
+            print(f"Group {group_idx}, Pedestrian {idx}, Location Offset: {location_offset.x},{location_offset.y},{location_offset.x}, Spawn Location: {spawn_location.x}, {spawn_location.y}")     
             ped_transform = carla.Transform(spawn_location + location_offset, group_config['rotation'])
             actor = self.world.try_spawn_actor(random.choice(self.pedestrian_bp), ped_transform)
             if actor:
                 self.actor_list.append(actor)
                 self.actor_id_lists[group_idx].append(actor.id)
-                self.assign_pedestrian_attributes(actor, idx)
+                self.assign_pedestrian_attributes(actor, idx)             
         
         return spawn_location, group_list
 
     def spawn_actors(self):
         for idx in range(self.num_groups):
-            _, location = self.set_random_offsets()
-            spawn_location, group_actors = self.spawn_actors_of_group(self.groups_config['groups'][idx], location, idx)
+            
+            spawn_location, group_actors = self.spawn_actors_of_group(self.groups_config['groups'][idx], idx)
 
             self.spawn_locations.append(spawn_location)
             self.group_actors[idx] = group_actors
@@ -336,7 +334,11 @@ class TrolleyScenario:
         
 
             
+def set_random_offsets():
 
+        offset_group_0 = carla.Vector3D(0, random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0) # The first group is always in the middle
+        offset_other_groups = carla.Vector3D(random.uniform(MIN_OFFSET_X, MAX_OFFSET_X), random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0)
+        return offset_group_0, offset_other_groups
         
 def normalize_pedestrian_count(count):
     return (count - MIN_PEDS) / (MAX_PEDS - MIN_PEDS)
@@ -368,6 +370,7 @@ def eval_genomes(genomes, config):
         'sun_altitude_angle': 90.0
     }
     world.apply_settings(settings)
+    
 
     groups_config = {
         'groups': [
@@ -379,14 +382,13 @@ def eval_genomes(genomes, config):
         ]
     }
    
-
+    group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']))]
     total_pedestrians = sum([group['number'] for group in groups_config['groups']])
     max_potential_harm = total_pedestrians * MAX_SPEED  
 
-    generation_spawn_locations = [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']]
-    print(f"Generation Spawn Locations: {generation_spawn_locations}")
+    generation_spawn_locations = [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']]  
     generation_pedestrian_attributes = pedestrian_data.sample(total_pedestrians).to_dict('records')
-    scenario_attributes = groups_config, client, weather_params, generation_pedestrian_attributes, generation_spawn_locations
+    scenario_attributes = groups_config, client, weather_params, generation_pedestrian_attributes, generation_spawn_locations, group_offsets
     for genome_id, genome in genomes:
         reward = 0
         genome.fitness = 0  # start with fitness level of 0
