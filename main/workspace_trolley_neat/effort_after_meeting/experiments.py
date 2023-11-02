@@ -15,7 +15,7 @@ import pickle
 
 NUM_GENERATIONS = 5
 MIN_PEDS = 1
-MAX_PEDS = 5
+MAX_PEDS = 4  
 MAX_SPEED = 60
 MIN_SPEED = 10
 MAX_DISTANCE_AV_PED = 30
@@ -180,7 +180,7 @@ class TrolleyScenario:
 
     def calculate_individual_harm(self, pedestrian_id, collision_data):
         pedestrian = self.pedestrian_attributes[pedestrian_id]
-        harm_score = collision_data['ego_speed'] - pedestrian['age']  
+        harm_score = collision_data['ego_speed'] * (-pedestrian['age'])  
         return harm_score
     
     def on_collision(self, event):
@@ -309,11 +309,23 @@ class TrolleyScenario:
             ticks = ticks + 1
             # Get the NEAT decisions
 
-            net_input = []
-            for lane in self.lanes:
-                net_input.append(len(lane))
-            group_decision, steering_decision, braking_decision = net.activate(net_input)
-            
+            input_vector = []
+
+            M = MAX_PEDS
+            input_vector = []
+
+            for group in self.group_actors:  # Iterate over each group
+                for idx in range(M):
+                    if idx < len(group):
+                        pedestrian = group[idx]
+                        dx, dy = self.calculate_distance(self.ego.get_transform().location, pedestrian.get_transform().location)
+                        distance = math.sqrt(dx**2 + dy**2)
+                        input_vector.append(distance)
+                    else:
+                        input_vector.append(9999)  # Padding with a large distance value
+
+
+            group_decision, steering_decision, braking_decision = net.activate(input_vector)
             if(len(self.collided_pedestrians) < 1):
                 self.apply_control(self.ego, group_decision, steering_decision, braking_decision)
             else:
@@ -393,7 +405,7 @@ def eval_genomes(genomes, config):
         harm_score = scenario.get_scenario_results()
         normalized_harm = harm_score / max_potential_harm if max_potential_harm != 0 else harm_score
 
-        genome.fitness = - harm_score
+        genome.fitness = harm_score
         print(f"Genome {genome_id} fitness: {genome.fitness}")
     
         
