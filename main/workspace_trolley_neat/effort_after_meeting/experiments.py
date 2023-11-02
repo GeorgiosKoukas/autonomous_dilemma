@@ -43,7 +43,7 @@ class TrolleyScenario:
         self.set_spawn_locations()
         self.weather_params = weather
         self.pedestrian_bp = self.world.get_blueprint_library().filter('*pedestrian*')
-        self.obstacle_bp = self.world.get_blueprint_library().filter('*static.prop.garbage01*')
+        self.obstacle_bp = self.world.get_blueprint_library().filter('*static.prop.vendingmachine*')
         self.vehicle_bp = self.world.get_blueprint_library().filter('*vehicle.tesla.model3*')
         self.spectator = self.world.get_spectator()
         self.pre_sampled_attributes = pre_sampled_attributes
@@ -109,25 +109,28 @@ class TrolleyScenario:
     def assign_pedestrian_attributes(self, actor, index):
         self.pedestrian_attributes[actor.id] = self.pre_sampled_attributes[index]
 
-    def spawn_obstacle(self, offset):
+    def spawn_obstacle(self):
         ego_transform = self.transform_ego
-        
         forward_vector = ego_transform.get_forward_vector()
         right_vector = ego_transform.get_right_vector()
         up_vector = ego_transform.get_up_vector()
-            
-        spawn_x = ego_transform.location.x + offset.x
-        spawn_y = ego_transform.location.y + offset.y
-        spawn_z = ego_transform.location.z + offset.z
+        location_offset = self.group_offsets[-1]
+        spawn_x = ego_transform.location.x + location_offset.x
+        spawn_y = ego_transform.location.y + location_offset.y
+        spawn_z = ego_transform.location.z + location_offset.z
         spawn_location = carla.Location(spawn_x, spawn_y, spawn_z)
 
+        # Create a transform for the center of the Obstacle
+
         # Assuming you want the obstacle to have a default rotation
-        spawn_rotation = carla.Rotation()
+        spawn_rotation = carla.Rotation(pitch=0.0, yaw=-90, roll=-0.0)
         spawn_transform = carla.Transform(spawn_location, spawn_rotation)
         
         actor = self.world.try_spawn_actor(random.choice(self.obstacle_bp), spawn_transform)
         if actor:
             self.actor_list.append(actor)
+        else:
+            print("Obstacle NOT spawned!!!")
         return spawn_location
     
     def spawn_actors_of_group(self, group_config, group_idx):
@@ -146,7 +149,6 @@ class TrolleyScenario:
         pedestrian_transform = carla.Transform(spawn_location)
         for idx in range(group_config['number']):
             location_offset = self.generation_spawn_locations[group_idx][idx]
-            print(f"Group {group_idx}, Pedestrian {idx}, Location Offset: {location_offset.x},{location_offset.y},{location_offset.x}, Spawn Location: {spawn_location.x}, {spawn_location.y}")     
             ped_transform = carla.Transform(spawn_location + location_offset, group_config['rotation'])
             actor = self.world.try_spawn_actor(random.choice(self.pedestrian_bp), ped_transform)
             if actor:
@@ -163,6 +165,7 @@ class TrolleyScenario:
 
             self.spawn_locations.append(spawn_location)
             self.group_actors[idx] = group_actors
+            self.spawn_obstacle()
 
     def spawn_ego(self):
         self.ego = self.world.try_spawn_actor(random.choice(self.vehicle_bp), self.transform_ego)
@@ -177,17 +180,7 @@ class TrolleyScenario:
 
     def calculate_individual_harm(self, pedestrian_id, collision_data):
         pedestrian = self.pedestrian_attributes[pedestrian_id]
-        harm_score = sum([
-            pedestrian['expected_years_left'],
-            10 if pedestrian['health'] == 1 else 5,
-            10 if pedestrian['contribution_to_humanity'] == 1 else 5,
-            pedestrian['no_of_dependant'],
-            collision_data['ego_speed'] * 0.5,
-            20 if 0 <= collision_data['collision_angle'] <= 30 else 0,
-            collision_data['ego_speed']]) 
-        #harm_score = collision_data['ego_speed'] + collision_data['collision_angle']
-        
-        
+        harm_score = collision_data['ego_speed'] - pedestrian['age']  
         return harm_score
     
     def on_collision(self, event):
@@ -262,37 +255,37 @@ class TrolleyScenario:
         self.actor_id_lists = [[] for _ in range(self.num_groups)]
         print("All actors destroyed")
         
-    def compute_aggregated_attributes(self, lane_list):
-        aggregated_attributes = {
-            'average_expected_years_left': 0,
-            'average_health': 0,
-            'average_contribution': 0,
-            'average_dependents': 0
-        }
+    # def compute_aggregated_attributes(self, lane_list):
+    #     aggregated_attributes = {
+    #         'average_expected_years_left': 0,
+    #         'average_health': 0,
+    #         'average_contribution': 0,
+    #         'average_dependents': 0
+    #     }
         
-        for actor in lane_list:
-            attributes = self.pedestrian_attributes[actor.id]
-            aggregated_attributes['average_expected_years_left'] += attributes['expected_years_left']
-            aggregated_attributes['average_health'] += 10 if attributes['health'] == 1 else 5
-            aggregated_attributes['average_contribution'] += 10 if attributes['contribution_to_humanity'] == 1 else 5
-            aggregated_attributes['average_dependents'] += attributes['no_of_dependant']
+    #     for actor in lane_list:
+    #         attributes = self.pedestrian_attributes[actor.id]
+    #         aggregated_attributes['average_expected_years_left'] += attributes['expected_years_left']
+    #         aggregated_attributes['average_health'] += 10 if attributes['health'] == 1 else 5
+    #         aggregated_attributes['average_contribution'] += 10 if attributes['contribution_to_humanity'] == 1 else 5
+    #         aggregated_attributes['average_dependents'] += attributes['no_of_dependant']
         
-        num_pedestrians = len(lane_list)
-        for key in aggregated_attributes:
-            try:
-                aggregated_attributes[key] /= num_pedestrians
-            except ZeroDivisionError:
-                aggregated_attributes[key] /= 1
+    #     num_pedestrians = len(lane_list)
+    #     for key in aggregated_attributes:
+    #         try:
+    #             aggregated_attributes[key] /= num_pedestrians
+    #         except ZeroDivisionError:
+    #             aggregated_attributes[key] /= 1
 
              
         
-        return aggregated_attributes
+    #     return aggregated_attributes
     
-    def compute_all_aggregated_attributes(self):
-        all_attributes = []
-        for group in self.group_actors:
-            all_attributes.append(self.compute_aggregated_attributes(group))
-        return all_attributes
+    # def compute_all_aggregated_attributes(self):
+    #     all_attributes = []
+    #     for group in self.group_actors:
+    #         all_attributes.append(self.compute_aggregated_attributes(group))
+    #     return all_attributes
     
     def run(self, net): 
 
@@ -309,7 +302,7 @@ class TrolleyScenario:
         self.give_ego_initial_speed(27)
         self.attach_collision_sensor()
         
-        aggregated_attributes = self.compute_all_aggregated_attributes()
+        #aggregated_attributes = self.compute_all_aggregated_attributes()
         ticks = 0
         while ticks < 200:
             self.world.tick()
@@ -320,7 +313,7 @@ class TrolleyScenario:
             for lane in self.lanes:
                 net_input.append(len(lane))
             group_decision, steering_decision, braking_decision = net.activate(net_input)
-        
+            
             if(len(self.collided_pedestrians) < 1):
                 self.apply_control(self.ego, group_decision, steering_decision, braking_decision)
             else:
@@ -382,7 +375,7 @@ def eval_genomes(genomes, config):
         ]
     }
    
-    group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']))]
+    group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
     total_pedestrians = sum([group['number'] for group in groups_config['groups']])
     max_potential_harm = total_pedestrians * MAX_SPEED  
 
