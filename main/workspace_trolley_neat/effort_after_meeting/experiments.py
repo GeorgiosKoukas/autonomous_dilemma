@@ -13,7 +13,7 @@ import numpy as np
 import pickle
 
 
-NUM_GENERATIONS = 40
+NUM_GENERATIONS = 30
 MIN_PEDS = 1
 MAX_PEDS = 4  
 MAX_SPEED = 60
@@ -53,6 +53,7 @@ class TrolleyScenario:
 
         self.lanes = [[] for _ in range(self.num_groups)]
         self.group_offsets = group_offsets
+        self.obstacle = None
 
     def setup_variables(self, groups_config, client):
         
@@ -66,7 +67,7 @@ class TrolleyScenario:
         self.radius_x, self.radius_y = 0.5, 0.5
         self.collided_pedestrians = set()
         self.total_harm_score = 0
-        
+
     def set_weather(self):
         
         self.weather = carla.WeatherParameters(**self.weather_params)
@@ -126,9 +127,10 @@ class TrolleyScenario:
         spawn_rotation = carla.Rotation(pitch=0.0, yaw=-90, roll=-0.0)
         spawn_transform = carla.Transform(spawn_location, spawn_rotation)
         
-        actor = self.world.try_spawn_actor(random.choice(self.obstacle_bp), spawn_transform)
-        if actor:
-            self.actor_list.append(actor)
+        self.obstacle = self.world.try_spawn_actor(random.choice(self.obstacle_bp), spawn_transform)
+        if self.obstacle:
+            
+            self.actor_list.append(self.obstacle)
         else:
             print("Obstacle NOT spawned!!!")
         return spawn_location
@@ -155,7 +157,8 @@ class TrolleyScenario:
                 self.actor_list.append(actor)
                 self.actor_id_lists[group_idx].append(actor.id)
                 self.assign_pedestrian_attributes(actor, idx)             
-        
+                group_list.append(actor)
+                #print(group_list)
         return spawn_location, group_list
 
     def spawn_actors(self):
@@ -165,7 +168,7 @@ class TrolleyScenario:
 
             self.spawn_locations.append(spawn_location)
             self.group_actors[idx] = group_actors
-            self.spawn_obstacle()
+            #self.spawn_obstacle()
 
     def spawn_ego(self):
         self.ego = self.world.try_spawn_actor(random.choice(self.vehicle_bp), self.transform_ego)
@@ -180,7 +183,7 @@ class TrolleyScenario:
 
     def calculate_individual_harm(self, pedestrian_id, collision_data):
         pedestrian = self.pedestrian_attributes[pedestrian_id]
-        harm_score = collision_data['ego_speed'] * (-pedestrian['age'])  
+        harm_score = collision_data['ego_speed']  
         return harm_score
     
     def on_collision(self, event):
@@ -323,8 +326,10 @@ class TrolleyScenario:
                         input_vector.append(distance)
                     else:
                         input_vector.append(9999)  # Padding with a large distance value
-
-
+            # dx, dy = self.calculate_distance(self.get_transform().location, self.obstacle.get_transform().location)
+            # distance = math.sqrt(dx**2 + dy**2)
+            input_vector.append(9999)
+            input_vector.append(self.get_ego_abs_velocity())
             group_decision, steering_decision, braking_decision = net.activate(input_vector)
             if(len(self.collided_pedestrians) < 1):
                 self.apply_control(self.ego, group_decision, steering_decision, braking_decision)
@@ -397,7 +402,7 @@ def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         reward = 0
         genome.fitness = 0  # start with fitness level of 0
-        net = neat.nn.FeedForwardNetwork.create(genome, config)  
+        net = neat.nn.FeedForwardNetwork.create(genome, config)   
         # Generate the same scenario for each AV in the same generation
         scenario = TrolleyScenario(*scenario_attributes)
         scenario.run(net)   
