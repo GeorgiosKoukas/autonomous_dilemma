@@ -13,7 +13,7 @@ import numpy as np
 import pickle
 
 
-NUM_GENERATIONS = 5
+NUM_GENERATIONS = 40
 MIN_PEDS = 1
 MAX_PEDS = 4  
 MAX_SPEED = 60
