@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
-
+NUM_EPISODES = 5
 NUM_GENERATIONS = 15
 MIN_PEDS = 1
 MAX_PEDS = 4  
@@ -178,7 +178,7 @@ class TrolleyScenario:
             return True
         else:
             print("Ego vehicle spawn failed")
-        return False
+            return False
             
 
     def calculate_individual_harm(self, pedestrian_id, collision_data):
@@ -219,6 +219,7 @@ class TrolleyScenario:
         transform_relative_to_ego = carla.Transform(carla.Location(x=2.5, z=0.7))
         self.collision_sensor = self.world.spawn_actor(bp, transform_relative_to_ego, attach_to=self.ego)
         self.collision_sensor.listen(lambda event: self.on_collision(event))
+        
 
     def calculate_yaw(self, car_location_x, car_location_y, centroid_x, centroid_y):
         return math.degrees(math.atan2(centroid_y - car_location_y, centroid_x - car_location_x))
@@ -254,6 +255,7 @@ class TrolleyScenario:
     def destroy_all(self):
         for actor in self.actor_list:
             actor.destroy()
+        self.collision_sensor.destroy()
         self.actor_list = []
         self.actor_id_lists = [[] for _ in range(self.num_groups)]
         #print("All actors destroyed")
@@ -293,8 +295,10 @@ class TrolleyScenario:
     def run(self, net): 
 
         #atexit.register(self.destroy_all) for some reason it breaks the script???
+        if not self.spawn_ego():
+            self.destroy_all()
+            return False
         
-        self.spawn_ego()
         self.spawn_actors()
         
         self.terminate_thread = False  # Initialize the flag
@@ -384,7 +388,7 @@ def eval_genomes(genomes, config):
     
 
     generation_scenarios = []
-    for scenario in range(1,31):
+    for scenario in range(NUM_EPISODES):
         groups_config = {
         'groups': [
             {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
@@ -409,7 +413,7 @@ def eval_genomes(genomes, config):
 
         
         genome.fitness = 0
-        for attributes in range(30):
+        for attributes in range(NUM_EPISODES):
             scenario_attributes = generation_scenarios[attributes]
           
               # start with fitness level of 0
