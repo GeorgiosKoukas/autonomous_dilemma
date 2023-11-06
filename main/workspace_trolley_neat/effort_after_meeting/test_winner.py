@@ -286,14 +286,6 @@ class TrolleyScenario:
                 dy1, 
                 dx2, 
                 dy2,
-                # clip_value(self.lane_1_attributes['average_expected_years_left']),
-                # clip_value(self.lane_1_attributes['average_health']),
-                # clip_value(self.lane_1_attributes['average_contribution']),
-                # clip_value(self.lane_1_attributes['average_dependents']),
-                # clip_value(self.lane_2_attributes['average_expected_years_left']),
-                # clip_value(self.lane_2_attributes['average_health']),
-                # clip_value(self.lane_2_attributes['average_contribution']),
-                # clip_value(self.lane_2_attributes['average_dependents'])
             ])
             self.steering_values.append(self.ego.get_control().steer)
         

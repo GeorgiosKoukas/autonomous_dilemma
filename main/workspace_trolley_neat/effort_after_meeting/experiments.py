@@ -13,17 +13,17 @@ import numpy as np
 import pickle
 
 
-NUM_GENERATIONS = 30
+NUM_GENERATIONS = 15
 MIN_PEDS = 1
 MAX_PEDS = 4  
 MAX_SPEED = 60
 MIN_SPEED = 10
 MAX_DISTANCE_AV_PED = 30
 MIN_DISTANCE_AV_PED = 5
-MAX_OFFSET_X = 10  # define maximum x offset
-MIN_OFFSET_X = -10  # define minimum x offset
-MAX_OFFSET_Y = 25  # define maximum y offset (keeping it near the ego)
-MIN_OFFSET_Y = 10 # define minimum y offset (keeping it near the ego)
+MAX_OFFSET_X = 6  # define maximum x offset
+MIN_OFFSET_X = -6  # define minimum x offset
+MAX_OFFSET_Y = 12  # define maximum y offset (keeping it near the ego)
+MIN_OFFSET_Y = 7 # define minimum y offset (keeping it near the ego)
 
 pedestrian_data = pd.read_csv('trolley.csv')
 
@@ -210,7 +210,7 @@ class TrolleyScenario:
                 
             harm_score = self.calculate_individual_harm(pedestrian_id, collision_data)
             self.total_harm_score += harm_score
-            print(f"Calculated harm score for pedestrian {pedestrian_id}: {harm_score}")
+            #print(f"Calculated harm score for pedestrian {pedestrian_id}: {harm_score}")
 
             
 
@@ -256,7 +256,7 @@ class TrolleyScenario:
             actor.destroy()
         self.actor_list = []
         self.actor_id_lists = [[] for _ in range(self.num_groups)]
-        print("All actors destroyed")
+        #print("All actors destroyed")
         
     # def compute_aggregated_attributes(self, lane_list):
     #     aggregated_attributes = {
@@ -307,7 +307,7 @@ class TrolleyScenario:
         
         #aggregated_attributes = self.compute_all_aggregated_attributes()
         ticks = 0
-        while ticks < 200:
+        while ticks < 100:
             self.world.tick()
             ticks = ticks + 1
             # Get the NEAT decisions
@@ -328,7 +328,7 @@ class TrolleyScenario:
                         input_vector.append(9999)  # Padding with a large distance value
             # dx, dy = self.calculate_distance(self.get_transform().location, self.obstacle.get_transform().location)
             # distance = math.sqrt(dx**2 + dy**2)
-            input_vector.append(9999)
+            #input_vector.append(9999)
             input_vector.append(self.get_ego_abs_velocity())
             group_decision, steering_decision, braking_decision = net.activate(input_vector)
             if(len(self.collided_pedestrians) < 1):
@@ -379,10 +379,13 @@ def eval_genomes(genomes, config):
         'precipitation': 50.0,
         'sun_altitude_angle': 90.0
     }
+    settings.no_rendering_mode = True
     world.apply_settings(settings)
     
 
-    groups_config = {
+    generation_scenarios = []
+    for scenario in range(1,31):
+        groups_config = {
         'groups': [
             {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
             {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
@@ -391,26 +394,33 @@ def eval_genomes(genomes, config):
             # You can add more groups here by following the same structure
         ]
     }
+        group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
+        total_pedestrians = sum([group['number'] for group in groups_config['groups']])
+        max_potential_harm = total_pedestrians * MAX_SPEED  
+        generation_scenarios.append((groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets))
    
-    group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
-    total_pedestrians = sum([group['number'] for group in groups_config['groups']])
-    max_potential_harm = total_pedestrians * MAX_SPEED  
-
-    generation_spawn_locations = [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']]  
-    generation_pedestrian_attributes = pedestrian_data.sample(total_pedestrians).to_dict('records')
-    scenario_attributes = groups_config, client, weather_params, generation_pedestrian_attributes, generation_spawn_locations, group_offsets
+    
     for genome_id, genome in genomes:
-        reward = 0
-        genome.fitness = 0  # start with fitness level of 0
-        net = neat.nn.FeedForwardNetwork.create(genome, config)   
-        # Generate the same scenario for each AV in the same generation
-        scenario = TrolleyScenario(*scenario_attributes)
-        scenario.run(net)   
-        # Use the results to determine the loss
-        harm_score = scenario.get_scenario_results()
-        normalized_harm = harm_score / max_potential_harm if max_potential_harm != 0 else harm_score
+        
+        genome_fitness = []
+        group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
+        total_pedestrians = sum([group['number'] for group in groups_config['groups']])
+        max_potential_harm = total_pedestrians * MAX_SPEED  
 
-        genome.fitness = harm_score
+        
+        genome.fitness = 0
+        for attributes in range(30):
+            scenario_attributes = generation_scenarios[attributes]
+          
+              # start with fitness level of 0
+            net = neat.nn.FeedForwardNetwork.create(genome, config)   
+            # Generate the same scenario for each AV in the same generation
+            scenario = TrolleyScenario(*scenario_attributes)
+            scenario.run(net)   
+            # Use the results to determine the loss
+            harm_score = scenario.get_scenario_results()
+            genome_fitness.append(-harm_score)
+        genome.fitness = sum(genome_fitness)
         print(f"Genome {genome_id} fitness: {genome.fitness}")
     
         
