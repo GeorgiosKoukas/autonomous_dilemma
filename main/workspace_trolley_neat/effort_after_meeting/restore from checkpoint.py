@@ -438,11 +438,12 @@ def run(config_path):
                                 neat.DefaultSpeciesSet, neat.DefaultStagnation,
                                 config_path)
     
-    p = neat.Population(config)
+    checkpoint = neat.Checkpointer(5, filename_prefix='neat-checkpoint-')
+    p = checkpoint.restore_checkpoint('neat-checkpoint-97')
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    checkpoint = neat.Checkpointer(5, filename_prefix='neat-checkpoint-')
+    
     p.add_reporter(checkpoint)
 
 
