@@ -59,6 +59,7 @@ def eval_genomes(genomes, config):
     world = client.get_world()
     settings = world.get_settings()
     settings.synchronous_mode = True
+    settings.no_rendering_mode = True
     weather_params = {
         'cloudiness': 0.0,
         'precipitation': 50.0,
@@ -114,7 +115,7 @@ def run(config_path):
                                 config_path)
     
     checkpoint = neat.Checkpointer(1, filename_prefix='neat-checkpoint-')
-    p = checkpoint.restore_checkpoint('neat-checkpoint-51')
+    p = checkpoint.restore_checkpoint('neat-checkpoint-80')
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
@@ -122,8 +123,35 @@ def run(config_path):
     p.add_reporter(checkpoint)
 
 
-    winner = p.run(eval_genomes, 1)
-    node_names = {-1:'num_lane_1', -2: 'num_lane_2', -3: 'ego_velocity', -4: 'dx1', -5: 'dy1', -6: 'dx2', -7: 'dy2'}
+    winner = p.run(eval_genomes, NUM_GENERATIONS)
+    node_names = data_mapping = {
+    -1: 'group_1_ped_1_location',
+    -2: 'group_1_ped_1_age',
+    -3: 'group_1_ped_2_location',
+    -4: 'group_1_ped_2_age',
+    -5: 'group_1_ped_3_location',
+    -6: 'group_1_ped_3_age',
+    -7: 'group_1_ped_4_location',
+    -8: 'group_1_ped_4_age',
+    -9: 'group_2_ped_1_location',
+    -10: 'group_2_ped_1_age',
+    -11: 'group_2_ped_2_location',
+    -12: 'group_2_ped_2_age',
+    -13: 'group_2_ped_3_location',
+    -14: 'group_2_ped_3_age',
+    -15: 'group_2_ped_4_location',
+    -16: 'group_2_ped_4_age',
+    -17: 'group_3_ped_1_location',
+    -18: 'group_3_ped_1_age',
+    -19: 'group_3_ped_2_location',
+    -20: 'group_3_ped_2_age',
+    -21: 'group_3_ped_3_location',
+    -22: 'group_3_ped_3_age',
+    -23: 'group_3_ped_4_location',
+    -24: 'group_3_ped_4_age',
+    #-25: 'obstacle_location',
+    -25: 'ego_vehicle_velocity',
+}
     visualize.draw_net(config, winner, True, node_names=node_names)
     visualize.plot_stats(stats, ylog=False, view=True)
     visualize.plot_species(stats, view=True)

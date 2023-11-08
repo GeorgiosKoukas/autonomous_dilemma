@@ -22,7 +22,7 @@ pedestrian_data = pd.read_csv('trolley.csv')
 def set_random_offsets():
 
         offset_group_0 = carla.Vector3D(0, random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0) # The first group is always in the middle
-        offset_other_groups = carla.Vector3D(random.uniform(MIN_OFFSET_X, MAX_OFFSET_X), random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0)
+        offset_other_groups = carla.Vector3D(random.uniform(MIN_OFFSET_X, 0), random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0)
         return offset_group_0, offset_other_groups
         
 def normalize_pedestrian_count(count):
@@ -104,6 +104,8 @@ results = {
             'harm_scores': [],
             'pedestrians_hit': [],
             'total_pedestrians': [],
+            'pedestrian_ages': [],
+            'pedestrian_hit_ages': [],
             'avg_steering': []
         }  
 def plot_average_steering(average_steering):
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     with open('winner_net.pkl', 'rb') as input_file:
         loaded_winner_net = pickle.load(input_file)
 
-    num_scenarios = 30  # or any number of scenarios for every car
+    
    
    
     client = carla.Client('localhost', 2000)
@@ -139,6 +141,7 @@ if __name__ == "__main__":
         'sun_altitude_angle': 90.0
     }
 ages_hit = []
+num_scenarios = 100  # or any number of scenarios for every car
 for _ in range(num_scenarios):
     groups_config = {
         'groups': [
@@ -151,7 +154,6 @@ for _ in range(num_scenarios):
     }
     group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
     total_pedestrians = sum([group['number'] for group in groups_config['groups']])
-    max_potential_harm = total_pedestrians * MAX_SPEED  
     scenario_attributes = groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets
     
     # Initialize the scenario with the random attributes
@@ -159,25 +161,47 @@ for _ in range(num_scenarios):
     
     # Test the loaded_winner_net with this scenario
     scenario.run(loaded_winner_net)
+
     results['harm_scores'].append(scenario.total_harm_score)
     results['pedestrians_hit'].append(len(scenario.collided_pedestrians))
-    print(scenario.pedestrian_ages)
     results['pedestrian_ages'].append(scenario.pedestrian_ages)
-    results['pedestrian_hit_ages'].append(scenario.pedestrian_hit_ages)
+   
+    if len(scenario.collided_pedestrians) > 0:
+        collided_pedestrians = [x for x in scenario.collided_pedestrians]
+        pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
+        results['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
+        max_age = max(max(results['pedestrian_ages']))
+        min_age = min(min(results['pedestrian_ages']))
 
-    max_age = max(results['pedestrian_ages'])
-    min_age = min(results['pedestrian_ages'])
+        try:
+            normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
+        
+        except ZeroDivisionError:
+            normalized_age_hit = [1 for age in pedestrian_hit_ages]
 
-    normalized_age_hit = results['pedestrian_hit_ages'] - min_age / max_age - min_age
-    scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
-    ages_hit.append(scenario_age_hit)
+        scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
+        ages_hit.append(scenario_age_hit)
 
-plt.plot(ages_hit, marker='o')
-plt.title('Average Age Hit Over Scenarios')
-plt.xlabel('Scenario Number')
-plt.ylabel('Average Age Hit')
+    else:
+        ages_hit.append(2)
 
+    results['harm_scores'] = []
+    results['pedestrians_hit'] = []
+    results['pedestrian_ages'] = []
 
+#plt.style.use('_mpl-gallery')
+
+# make data
+
+# plot:
+fig, ax = plt.subplots()
+
+ax.hist(ages_hit, bins=15, linewidth=0.5, edgecolor="white")
+
+ax.set(xlim=(0, 8), xticks=np.arange(1, 8),
+       ylim=(0, 56), yticks=np.linspace(0, 56, 9))
+
+plt.show()
 # # Labeling and legend
 # plt.xlabel('Age')
 # plt.ylabel('Frequency')

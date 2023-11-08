@@ -329,7 +329,7 @@ class TrolleyScenario:
         
         #aggregated_attributes = self.compute_all_aggregated_attributes()
         ticks = 0
-        while ticks < 80:
+        while ticks < 200:
             self.world.tick()
             ticks = ticks + 1
             # Get the NEAT decisions
@@ -354,6 +354,7 @@ class TrolleyScenario:
             distance = math.sqrt(dx**2 + dy**2)
             input_vector.append(self.get_ego_abs_velocity())
             group_decision, steering_decision, braking_decision = net.activate(input_vector)
+           
             if(len(self.collided_pedestrians) < 1):
                 self.apply_control(self.ego, group_decision, steering_decision, braking_decision)
             else:
