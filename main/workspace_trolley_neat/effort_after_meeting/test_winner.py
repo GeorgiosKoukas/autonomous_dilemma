@@ -13,22 +13,12 @@ import numpy as np
 import pickle
 
 from experiments import TrolleyScenario
+from utils import *
 
 pedestrian_data = pd.read_csv('trolley.csv')
         
-NUM_EPISODES = 10
-NUM_GENERATIONS = 100
-MIN_PEDS = 1
-MAX_PEDS = 4  
-MAX_SPEED = 60
-MIN_SPEED = 10
-MAX_DISTANCE_AV_PED = 30
-MIN_DISTANCE_AV_PED = 5
-MAX_OFFSET_X = 7  # define maximum x offset
-MIN_OFFSET_X = -7  # define minimum x offset
-MAX_OFFSET_Y = 15  # define maximum y offset (keeping it near the ego)
-MIN_OFFSET_Y = 8 # define minimum y offset (keeping it near the ego)
-            
+
+
 def set_random_offsets():
 
         offset_group_0 = carla.Vector3D(0, random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0) # The first group is always in the middle
@@ -148,14 +138,14 @@ if __name__ == "__main__":
         'precipitation': 50.0,
         'sun_altitude_angle': 90.0
     }
-
+ages_hit = []
 for _ in range(num_scenarios):
     groups_config = {
         'groups': [
             {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
             {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
             {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)}
+            #{'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)}
             # You can add more groups here by following the same structure
         ]
     }
@@ -171,11 +161,31 @@ for _ in range(num_scenarios):
     scenario.run(loaded_winner_net)
     results['harm_scores'].append(scenario.total_harm_score)
     results['pedestrians_hit'].append(len(scenario.collided_pedestrians))
-    
-   
-#     all_scenario_steering_values.append(scenario.steering_values)
-# all_scenario_steering_values = pad_steering_values(all_scenario_steering_values)    
-plot_results()
-# average_steering = compute_average_steering(all_scenario_steering_values)
-# plot_average_steering(average_steering)
+    print(scenario.pedestrian_ages)
+    results['pedestrian_ages'].append(scenario.pedestrian_ages)
+    results['pedestrian_hit_ages'].append(scenario.pedestrian_hit_ages)
+
+    max_age = max(results['pedestrian_ages'])
+    min_age = min(results['pedestrian_ages'])
+
+    normalized_age_hit = results['pedestrian_hit_ages'] - min_age / max_age - min_age
+    scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
+    ages_hit.append(scenario_age_hit)
+
+plt.plot(ages_hit, marker='o')
+plt.title('Average Age Hit Over Scenarios')
+plt.xlabel('Scenario Number')
+plt.ylabel('Average Age Hit')
+
+
+# # Labeling and legend
+# plt.xlabel('Age')
+# plt.ylabel('Frequency')
+# plt.legend()
+
+# # Show the plot
+# plt.show()
+       
+# plot_results()
+
     
