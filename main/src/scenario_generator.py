@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 from utils import *
-
+from configobj import ConfigObj
 
 pedestrian_data = pd.read_csv('trolley.csv')
 
@@ -68,9 +68,11 @@ class TrolleyScenario:
         self.transform_ego = carla.Transform(self.location_ego, self.rotation_ego)
 
     def teleport_spectator(self, location):
+
         self.spectator.set_transform(location)
         
     def move_spectator_with_ego(self):
+
         while not self.terminate_thread:
             time.sleep(0.02)  # A slight delay to avoid excessive updates
 
@@ -99,6 +101,7 @@ class TrolleyScenario:
         self.pedestrian_attributes[actor.id] = self.pre_sampled_attributes[index]
 
     def spawn_obstacle(self):
+        
         ego_transform = self.transform_ego
 
         forward_vector = ego_transform.get_forward_vector()
@@ -145,12 +148,14 @@ class TrolleyScenario:
         # Create a transform for the center of the Group
         pedestrian_transform = carla.Transform(spawn_location)
         for idx in range(group_config['number']):
+            
             location_offset = self.generation_spawn_locations[group_idx][idx]
             ped_transform = carla.Transform(spawn_location + location_offset, group_config['rotation'])
             actor = self.world.try_spawn_actor(random.choice(self.pedestrian_bp), ped_transform)
 
             if actor:
                 self.actor_list.append(actor)
+ 
                 self.actor_id_lists[group_idx].append(actor.id)
                 self.assign_pedestrian_attributes(actor, idx)             
                 group_list.append(actor)
@@ -284,12 +289,12 @@ class TrolleyScenario:
             reaction_velocity_threshold = 5.0  # You can adjust this velocity
 
             if relative_velocity > reaction_velocity_threshold:
-                # Make the pedestrian jump aside or take other evasive actions
-                # Example: Move the pedestrian to the side
+
+                # Move the pedestrian to the side
                 right_vector = ego_transform.get_right_vector()
-                side_vector = carla.Vector3D(random.uniform(-2, 2)*right_vector.x, random.uniform(-2, 2)*right_vector.y, 0)
-                new_location = ped_transform.location + side_vector
-                #new_location = ped_location + carla.Location(x=random.uniform(-2, 2), y=random.uniform(-2, 2))
+                scaled_vector = carla.Vector3D(random.uniform(-2, 2)*right_vector.x, random.uniform(-2, 2)*right_vector.y, 0)
+                new_location = ped_transform.location + scaled_vector
+                
                 pedestrian.set_transform(carla.Transform(new_location, pedestrian.get_transform().rotation))
                 self.reacted_pedestrians[pedestrian.id] = True
 
@@ -308,37 +313,6 @@ class TrolleyScenario:
         
         #print("All actors destroyed")
         
-    # def compute_aggregated_attributes(self, lane_list):
-    #     aggregated_attributes = {
-    #         'average_expected_years_left': 0,
-    #         'average_health': 0,
-    #         'average_contribution': 0,
-    #         'average_dependents': 0
-    #     }
-        
-    #     for actor in lane_list:
-    #         attributes = self.pedestrian_attributes[actor.id]
-    #         aggregated_attributes['average_expected_years_left'] += attributes['expected_years_left']
-    #         aggregated_attributes['average_health'] += 10 if attributes['health'] == 1 else 5
-    #         aggregated_attributes['average_contribution'] += 10 if attributes['contribution_to_humanity'] == 1 else 5
-    #         aggregated_attributes['average_dependents'] += attributes['no_of_dependant']
-        
-    #     num_pedestrians = len(lane_list)
-    #     for key in aggregated_attributes:
-    #         try:
-    #             aggregated_attributes[key] /= num_pedestrians
-    #         except ZeroDivisionError:
-    #             aggregated_attributes[key] /= 1
-
-             
-        
-    #     return aggregated_attributes
-    
-    # def compute_all_aggregated_attributes(self):
-    #     all_attributes = []
-    #     for group in self.group_actors:
-    #         all_attributes.append(self.compute_aggregated_attributes(group))
-    #     return all_attributes
     
     def run(self, net): 
 
@@ -359,6 +333,8 @@ class TrolleyScenario:
         
         #aggregated_attributes = self.compute_all_aggregated_attributes()
         ticks = 0
+        
+
         while ticks < 200:
             self.world.tick()
             ticks = ticks + 1
@@ -420,15 +396,7 @@ def eval_genomes(genomes, config):
 
     generation_scenarios = []
     for scenario in range(NUM_EPISODES):
-        groups_config = {
-        'groups': [
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-           #{'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)}
-           # You can add more groups here by following the same structure
-        ]
-    }
+        groups_config = generate_groups_config(NUM_GROUPS)
         group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
         total_pedestrians = sum([group['number'] for group in groups_config['groups']])
         generation_scenarios.append((groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets))
@@ -472,15 +440,70 @@ def run(config_path):
 
 
     winner = p.run(eval_genomes, NUM_GENERATIONS)
-    node_names = {-1:'distance', -2: 'age', 0:'group_decision', 1:'steering_decision', 2:'braking_decision', 3:'speed'}
+    node_names =  generate_node_names(MAX_PEDS, NUM_GROUPS)
     visualize.draw_net(config, winner, True, node_names=node_names)
     visualize.plot_stats(stats, ylog=False, view=True)
     visualize.plot_species(stats, view=True)
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
     with open('winner_net.pkl', 'wb') as output:
         pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
-if __name__ == "__main__":    
+        
+if __name__ == "__main__":  
+    
+    
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'config.txt')
+
+    # Update the value of num_inputs
+    config = ConfigObj(config_path, write_empty_values=True)
+    num_inputs = NUM_GROUPS * MAX_PEDS * 2 + 1  
+    config['DefaultGenome']['num_inputs'] = num_inputs
+    config.write() 
+
     run(config_path)
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  # def compute_aggregated_attributes(self, lane_list):
+    #     aggregated_attributes = {
+    #         'average_expected_years_left': 0,
+    #         'average_health': 0,
+    #         'average_contribution': 0,
+    #         'average_dependents': 0
+    #     }
+        
+    #     for actor in lane_list:
+    #         attributes = self.pedestrian_attributes[actor.id]
+    #         aggregated_attributes['average_expected_years_left'] += attributes['expected_years_left']
+    #         aggregated_attributes['average_health'] += 10 if attributes['health'] == 1 else 5
+    #         aggregated_attributes['average_contribution'] += 10 if attributes['contribution_to_humanity'] == 1 else 5
+    #         aggregated_attributes['average_dependents'] += attributes['no_of_dependant']
+        
+    #     num_pedestrians = len(lane_list)
+    #     for key in aggregated_attributes:
+    #         try:
+    #             aggregated_attributes[key] /= num_pedestrians
+    #         except ZeroDivisionError:
+    #             aggregated_attributes[key] /= 1
+
+             
+        
+    #     return aggregated_attributes
+    
+    # def compute_all_aggregated_attributes(self):
+    #     all_attributes = []
+    #     for group in self.group_actors:
+    #         all_attributes.append(self.compute_aggregated_attributes(group))
+    #     return all_attributes

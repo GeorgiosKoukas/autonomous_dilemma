@@ -3,9 +3,9 @@ import random
 import math
 import pandas as pd
 
-
+NUM_GROUPS = 2
 NUM_EPISODES = 3
-NUM_GENERATIONS = 50
+NUM_GENERATIONS = 1
 MIN_PEDS = 1
 MAX_PEDS = 4  
 MAX_SPEED = 30
@@ -25,6 +25,41 @@ pedestrian_data = pd.read_csv('trolley.csv')
 
 MIN_AGE = pedestrian_data['age'].min()
 MAX_AGE = pedestrian_data['age'].max()
+
+def generate_node_names(max_peds, num_groups):
+    node_names = {}
+    node_counter = 1
+
+    for group_num in range(1, num_groups + 1):
+        for ped_num in range(1, max_peds + 1):
+            location_key = -(node_counter)
+            age_key = -(node_counter + 1)
+
+            location_name = f'group_{group_num}_ped_{ped_num}_location'
+            age_name = f'group_{group_num}_ped_{ped_num}_age'
+
+            node_names[location_key] = location_name
+            node_names[age_key] = age_name
+
+            node_counter += 2
+
+    # Add ego vehicle velocity
+    ego_velocity_key = -(node_counter)
+    node_names[ego_velocity_key] = 'ego_vehicle_velocity'
+
+    return node_names
+
+def generate_groups_config(NUM_GROUPS):
+    groups = []
+    for _ in range(NUM_GROUPS):
+        group_config = {
+            'number': random.randint(MIN_PEDS, MAX_PEDS),
+            'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)
+        }
+        groups.append(group_config)
+
+    groups_config = {'groups': groups}
+    return groups_config
 
 def calculate_collision_angle(ego_vehicle, other_actor):
     ego_velocity = ego_vehicle.get_velocity()
