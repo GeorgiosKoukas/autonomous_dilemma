@@ -3,11 +3,12 @@ import random
 import math
 import pandas as pd
 
-NUM_GROUPS = 2
+NUM_GROUPS = 3
 NUM_EPISODES = 3
-NUM_GENERATIONS = 1
+NUM_GENERATIONS = 50
 MIN_PEDS = 1
 MAX_PEDS = 4  
+
 MAX_SPEED = 30
 MIN_SPEED = 10
 MAX_DISTANCE_AV_PED = 30

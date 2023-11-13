@@ -390,7 +390,7 @@ def eval_genomes(genomes, config):
         'precipitation': 50.0,
         'sun_altitude_angle': 90.0
     }
-    #settings.no_rendering_mode = True
+    settings.no_rendering_mode = True
     world.apply_settings(settings)
     
 
@@ -447,7 +447,7 @@ def run(config_path):
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
     with open('winner_net.pkl', 'wb') as output:
         pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
-        
+
 if __name__ == "__main__":  
     
     
