@@ -40,6 +40,8 @@ class TrolleyScenario:
         self.group_offsets = group_offsets
         self.obstacle = None
         self.pedestrian_ages = []
+        self.reacted_pedestrians = {}
+
     def setup_variables(self, groups_config, client):
         
         self.groups_config = groups_config
@@ -263,6 +265,34 @@ class TrolleyScenario:
         
         return dx, dy  
     
+    def react_to_approaching_car(self, pedestrian, ego_transform, ego_velocity):
+        # Calculate distance between pedestrian and ego vehicle
+       
+        ped_transform = pedestrian.get_transform()
+        distance = ego_transform.location.distance(ped_transform.location)
+
+        # Define a threshold distance to trigger the reaction
+        reaction_distance = 10.0  # You can adjust this distance
+        ped_velocity = pedestrian.get_velocity()
+        if distance < reaction_distance and not self.reacted_pedestrians.get(pedestrian.id, False):
+            # Calculate relative velocity between ego vehicle and pedestrian
+            
+            
+            relative_velocity = ((ego_velocity.x - ped_velocity.x )**2 + (ego_velocity.y - ped_velocity.y)**2)**0.5
+
+            # Define a threshold velocity to trigger the reaction
+            reaction_velocity_threshold = 5.0  # You can adjust this velocity
+
+            if relative_velocity > reaction_velocity_threshold:
+                # Make the pedestrian jump aside or take other evasive actions
+                # Example: Move the pedestrian to the side
+                right_vector = ego_transform.get_right_vector()
+                side_vector = carla.Vector3D(random.uniform(-2, 2)*right_vector.x, random.uniform(-2, 2)*right_vector.y, 0)
+                new_location = ped_transform.location + side_vector
+                #new_location = ped_location + carla.Location(x=random.uniform(-2, 2), y=random.uniform(-2, 2))
+                pedestrian.set_transform(carla.Transform(new_location, pedestrian.get_transform().rotation))
+                self.reacted_pedestrians[pedestrian.id] = True
+
     def get_scenario_results(self):
     
         return self.total_harm_score
@@ -346,7 +376,10 @@ class TrolleyScenario:
                         input_vector.append(distance)
                         
                         input_vector.append(self.pedestrian_attributes[pedestrian.id]['age'])
-                        
+
+                        # Call the react_to_approaching_car method for each pedestrian
+                        self.react_to_approaching_car(pedestrian, self.ego.get_transform(), self.ego.get_velocity())
+
                     else:
                         input_vector.append(-9999)
                         input_vector.append(-9999)  # Padding with a large distance value
@@ -381,7 +414,7 @@ def eval_genomes(genomes, config):
         'precipitation': 50.0,
         'sun_altitude_angle': 90.0
     }
-    settings.no_rendering_mode = True
+    #settings.no_rendering_mode = True
     world.apply_settings(settings)
     
 
