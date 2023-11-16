@@ -241,8 +241,23 @@ class TrolleyScenario:
         transform_relative_to_ego = carla.Transform(carla.Location(x=2.5, z=0.7))
         self.collision_sensor = self.world.spawn_actor(bp, transform_relative_to_ego, attach_to=self.ego)
         self.collision_sensor.listen(lambda event: self.on_collision(event))
-        
 
+    #     rss_sensor_bp = self.world.get_blueprint_library().find('sensor.other.rss')
+    #     rss_sensor_transform = carla.Transform(carla.Location(x=1.0, z=1.8))
+    #     self.rss_sensor = self.world.spawn_actor(rss_sensor_bp, rss_sensor_transform, attach_to=self.ego)
+    #    # self.rss_sensor.set_attribute('debug', 'True')
+    #     self.rss_sensor.listen(lambda event: self._on_rss_response(event))
+        
+    # def _on_rss_response(self, response):
+
+    #     timestamp = response.timestamp
+    #     response_valid = response.response_valid
+    #     proper_response = response.proper_response
+    #     ego_dynamics_on_route = response.ego_dynamics_on_route
+    #     rss_state_snapshot = response.rss_state_snapshot
+    #     situation_snapshot = response.situation_snapshot
+    #     world_model = response.world_model
+    #     print(f"Timestamp: {timestamp}, Response valid: {response_valid}, Proper response: {proper_response}, Ego dynamics on route: {ego_dynamics_on_route}, RSS state snapshot: {rss_state_snapshot}, Situation snapshot: {situation_snapshot}, World model: {world_model}")
     def calculate_yaw(self, car_location_x, car_location_y, centroid_x, centroid_y):
 
         return math.degrees(math.atan2(centroid_y - car_location_y, centroid_x - car_location_x))
@@ -308,6 +323,7 @@ class TrolleyScenario:
             actor.destroy()
 
         self.collision_sensor.destroy()
+        #self.rss_sensor.destroy()
         self.actor_list = []
         self.actor_id_lists = [[] for _ in range(self.num_groups)]
         

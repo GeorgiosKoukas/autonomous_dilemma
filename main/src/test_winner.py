@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
-from experiments import TrolleyScenario
+from scenario_generator import TrolleyScenario
 from utils import *
 
 pedestrian_data = pd.read_csv('trolley.csv')
