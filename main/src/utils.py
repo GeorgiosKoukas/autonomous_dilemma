@@ -5,21 +5,25 @@ import pandas as pd
 
 NUM_GROUPS = 3
 NUM_EPISODES = 3
-NUM_GENERATIONS = 1
+NUM_GENERATIONS = 50
+
+
 MIN_PEDS = 1
 MAX_PEDS = 4  
-
 MAX_SPEED = 27
 MIN_SPEED = 10
 MAX_DISTANCE_AV_PED = 30
 MIN_DISTANCE_AV_PED = 5
+
 MAX_OFFSET_X = 7  # define maximum x offset
 MIN_OFFSET_X = -7  # define minimum x offset
 MAX_OFFSET_Y = 12  # define maximum y offset (keeping it near the ego)
 MIN_OFFSET_Y = 20 # define minimum y offset (keeping it near the ego)
+
 WEIGHT_COLISSION_SPEED = 0.7
 WEIGHT_AGE = 0.3
 WEIGHT_OBSTACLE_COLISSION = 0.2
+
 MAGNYFYING_FITNESS = 100
 
 pedestrian_data = pd.read_csv('trolley.csv')
