@@ -1,23 +1,6 @@
 #Provoles dianismatwn se reaction pedestrians
 
-import carla
-import time
-import atexit
-import random
-import math
-import pandas as pd
-import neat
-import os
-import threading
-import visualize
-import matplotlib.pyplot as plt
-import numpy as np
-import pickle
 from utils import *
-from configobj import ConfigObj
-
-pedestrian_data = pd.read_csv('trolley.csv')
-
 
 class TrolleyScenario:
 
@@ -65,7 +48,7 @@ class TrolleyScenario:
 
     def set_spawn_locations(self):
         
-        self.location_ego = carla.Location(x=-1.860508, y=-185.003555, z=0.5)
+        self.location_ego = carla.Location(x=-3, y=-185, z=0.5)
         self.rotation_ego = carla.Rotation(pitch=0.0, yaw=90, roll=-0.0)
         self.transform_ego = carla.Transform(self.location_ego, self.rotation_ego)
 
@@ -213,7 +196,10 @@ class TrolleyScenario:
             if pedestrian_id in self.collided_pedestrians:
                 return 
             
-            if pedestrian_id == self.obstacle.id:
+            if pedestrian_id is self.obstacle.id or pedestrian_id not in self.actor_id_lists:
+                '''
+                If the ego hits something other (!wall or obstacle!) than pedestrians there still punishment but less
+                '''
                 self.collided_pedestrians.add(pedestrian_id)
                 collision_data = {
                     #'timestamp': event.timestamp,
@@ -222,6 +208,9 @@ class TrolleyScenario:
                 }
                 harm_score = MAGNYFYING_FITNESS * (WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data['ego_speed'])) 
                 self.total_harm_score += harm_score
+                
+                    
+
             self.collided_pedestrians.add(pedestrian_id)
             collision_data = {
                 #'timestamp': event.timestamp,
@@ -245,22 +234,7 @@ class TrolleyScenario:
         self.collision_sensor = self.world.spawn_actor(bp, transform_relative_to_ego, attach_to=self.ego)
         self.collision_sensor.listen(lambda event: self.on_collision(event))
 
-    #     rss_sensor_bp = self.world.get_blueprint_library().find('sensor.other.rss')
-    #     rss_sensor_transform = carla.Transform(carla.Location(x=1.0, z=1.8))
-    #     self.rss_sensor = self.world.spawn_actor(rss_sensor_bp, rss_sensor_transform, attach_to=self.ego)
-    #    # self.rss_sensor.set_attribute('debug', 'True')
-    #     self.rss_sensor.listen(lambda event: self._on_rss_response(event))
-        
-    # def _on_rss_response(self, response):
 
-    #     timestamp = response.timestamp
-    #     response_valid = response.response_valid
-    #     proper_response = response.proper_response
-    #     ego_dynamics_on_route = response.ego_dynamics_on_route
-    #     rss_state_snapshot = response.rss_state_snapshot
-    #     situation_snapshot = response.situation_snapshot
-    #     world_model = response.world_model
-    #     print(f"Timestamp: {timestamp}, Response valid: {response_valid}, Proper response: {proper_response}, Ego dynamics on route: {ego_dynamics_on_route}, RSS state snapshot: {rss_state_snapshot}, Situation snapshot: {situation_snapshot}, World model: {world_model}")
     def calculate_yaw(self, car_location_x, car_location_y, centroid_x, centroid_y):
 
         return math.degrees(math.atan2(centroid_y - car_location_y, centroid_x - car_location_x))
@@ -394,49 +368,6 @@ class TrolleyScenario:
         thread.join()
         self.destroy_all()
         
-
-            
-
-  
-def eval_genomes(genomes, config):
-    client = carla.Client('localhost', 2000)
-    client.set_timeout(15)
-    world = client.get_world()
-    settings = world.get_settings()
-    settings.synchronous_mode = True
-    weather_params = {
-        'cloudiness': 0.0,
-        'precipitation': 50.0,
-        'sun_altitude_angle': 90.0
-    }
-    settings.no_rendering_mode = True
-    world.apply_settings(settings)
-    
-
-    generation_scenarios = []
-    for scenario in range(NUM_EPISODES):
-        groups_config = generate_groups_config(NUM_GROUPS)
-        group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
-        total_pedestrians = sum([group['number'] for group in groups_config['groups']])
-        generation_scenarios.append((groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets))
-   
-    
-    for genome_id, genome in genomes:
-        
-        genome_fitness = []
-        genome.fitness = 0
-        for attributes in range(NUM_EPISODES):
-            scenario_attributes = generation_scenarios[attributes]
-          
-            net = neat.nn.FeedForwardNetwork.create(genome, config)   
-            # Generate the same scenario for each AV in the same generation
-            scenario = TrolleyScenario(*scenario_attributes)
-            scenario.run(net)   
-            # Use the results to determine the loss
-            harm_score = scenario.get_scenario_results()
-            genome_fitness.append(-harm_score)
-        genome.fitness = sum(genome_fitness)
-        print(f"Genome {genome_id} fitness: {genome.fitness}")
     
         
         
@@ -445,41 +376,9 @@ def eval_genomes(genomes, config):
         
         
         
-def run(config_path):
-    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                                neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                                config_path)
-    
-    p = neat.Population(config)
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    checkpoint = neat.Checkpointer(1, filename_prefix='neat-checkpoint-')
-    p.add_reporter(checkpoint)
 
 
-    winner = p.run(eval_genomes, NUM_GENERATIONS)
-    node_names =  generate_node_names(MAX_PEDS, NUM_GROUPS)
-    visualize.draw_net(config, winner, True, node_names=node_names)
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
-    winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-    with open('winner_net.pkl', 'wb') as output:
-        pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
 
-if __name__ == "__main__":  
-    
-    
-    local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config.txt')
-
-    # Update the value of num_inputs
-    config = ConfigObj(config_path, write_empty_values=True)
-    num_inputs = NUM_GROUPS * MAX_PEDS * 2 + 1  
-    config['DefaultGenome']['num_inputs'] = num_inputs
-    config.write() 
-
-    run(config_path)
     
 
 

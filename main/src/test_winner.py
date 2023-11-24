@@ -1,20 +1,5 @@
-import carla
-import time
-import atexit
-import random
-import math
-import pandas as pd
-import neat
-import os
-import threading
-import visualize
-import matplotlib.pyplot as plt
-import numpy as np
-import pickle
-
-from scenario_generator import TrolleyScenario
 from utils import *
-
+from trolley_scenario import TrolleyScenario
 pedestrian_data = pd.read_csv('trolley.csv')
         
 
@@ -189,28 +174,9 @@ for _ in range(num_scenarios):
     results['harm_scores'] = []
     results['pedestrians_hit'] = []
     results['pedestrian_ages'] = []
-
-#plt.style.use('_mpl-gallery')
-
-# make data
-
-# plot:
 fig, ax = plt.subplots()
 
 ax.hist(ages_hit, bins=15, linewidth=0.5, edgecolor="white")
-
-# ax.set(xlim=(0, 8), xticks=np.arange(1, 8),
-#        ylim=(0, 56), yticks=np.linspace(0, 56, 9))
-
 plt.show()
-# # Labeling and legend
-# plt.xlabel('Age')
-# plt.ylabel('Frequency')
-# plt.legend()
-
-# # Show the plot
-# plt.show()
-       
-# plot_results()
 
     

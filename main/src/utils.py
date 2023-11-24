@@ -1,11 +1,25 @@
 import carla
+import time
+import atexit
 import random
 import math
 import pandas as pd
+import neat
+import os
+import threading
+import visualize
+import matplotlib.pyplot as plt
+import numpy as np
+import pickle
+from configobj import ConfigObj
+
+
+
+
 
 NUM_GROUPS = 3
 NUM_EPISODES = 3
-NUM_GENERATIONS = 30
+NUM_GENERATIONS = 1
 
 
 MIN_PEDS = 1
@@ -30,6 +44,8 @@ pedestrian_data = pd.read_csv('trolley.csv')
 
 MIN_AGE = pedestrian_data['age'].min()
 MAX_AGE = pedestrian_data['age'].max()
+
+
 
 def generate_node_names(max_peds, num_groups):
     node_names = {}
@@ -100,4 +116,5 @@ def generate_spawn_location():
     spawn_y = random.uniform(0, 1)
     spawn_z = random.uniform(0.1, 0.8)
     return carla.Location(spawn_x, spawn_y, spawn_z)
+
 
