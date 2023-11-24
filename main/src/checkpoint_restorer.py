@@ -73,7 +73,7 @@ def run(config_path):
                                 config_path)
     
     checkpoint = neat.Checkpointer(1, filename_prefix='neat-checkpoint-')
-    p = checkpoint.restore_checkpoint('neat-checkpoint-120')
+    p = checkpoint.restore_checkpoint('neat-checkpoint-170  h')
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)

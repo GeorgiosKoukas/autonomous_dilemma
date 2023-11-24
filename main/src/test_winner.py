@@ -65,6 +65,7 @@ def plot_results():
     
     # Show all plots
     plt.show()
+
 def compute_average_steering(all_scenario_steering_values):
     num_scenarios = len(all_scenario_steering_values)
     num_timesteps = len(all_scenario_steering_values[0])  # Assuming all scenarios have the same number of timesteps
@@ -84,7 +85,8 @@ results = {
             'pedestrian_ages': [],
             'pedestrian_hit_ages': [],
             'avg_steering': []
-        }  
+        } 
+ 
 def plot_average_steering(average_steering):
     plt.figure()
     plt.plot(average_steering, marker='o')
@@ -100,6 +102,28 @@ def pad_steering_values(all_scenario_steering_values):
         while len(scenario) < max_length:
             scenario.append(0)  # Appending the last steering value
     return all_scenario_steering_values
+
+def control_live_feed(ego):
+    fig, axs = plt.subplots(3, 1) 
+    while True:
+        if ego:
+            control = ego.get_control()
+            brake = control.brake
+            steering = control.steer
+            throttle = control.throttle
+
+            axs[0].cla()  # Clear the previous plot
+            axs[0].bar(['Throttle'], [throttle])
+            axs[0].set_ylim(0, 1)  # Set y-axis limit for throttle
+
+            axs[1].cla()
+            axs[1].bar(['Brake'], [brake])
+            axs[1].set_ylim(0, 1)  # Set y-axis limit for brake
+
+            axs[2].cla()
+            axs[2].bar(['Steering'], [steering])
+            axs[2].set_ylim(-1, 1)  # Set y-axis limit for steering
+
 if __name__ == "__main__":    
     with open('winner_net.pkl', 'rb') as input_file:
         loaded_winner_net = pickle.load(input_file)
@@ -135,10 +159,10 @@ for _ in range(num_scenarios):
     
     # Initialize the scenario with the random attributes
     scenario = TrolleyScenario(*scenario_attributes)
-    
+
+
     # Test the loaded_winner_net with this scenario
     scenario.run(loaded_winner_net)
-
     results['harm_scores'].append(scenario.total_harm_score)
     results['pedestrians_hit'].append(len(scenario.collided_pedestrians))
     results['pedestrian_ages'].append(scenario.pedestrian_ages)
@@ -175,8 +199,8 @@ fig, ax = plt.subplots()
 
 ax.hist(ages_hit, bins=15, linewidth=0.5, edgecolor="white")
 
-ax.set(xlim=(0, 8), xticks=np.arange(1, 8),
-       ylim=(0, 56), yticks=np.linspace(0, 56, 9))
+# ax.set(xlim=(0, 8), xticks=np.arange(1, 8),
+#        ylim=(0, 56), yticks=np.linspace(0, 56, 9))
 
 plt.show()
 # # Labeling and legend

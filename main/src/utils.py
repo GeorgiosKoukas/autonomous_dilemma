@@ -5,7 +5,7 @@ import pandas as pd
 
 NUM_GROUPS = 3
 NUM_EPISODES = 3
-NUM_GENERATIONS = 50
+NUM_GENERATIONS = 30
 
 
 MIN_PEDS = 1

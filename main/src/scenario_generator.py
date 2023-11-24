@@ -1,3 +1,5 @@
+#Provoles dianismatwn se reaction pedestrians
+
 import carla
 import time
 import atexit
@@ -232,6 +234,7 @@ class TrolleyScenario:
             harm_score = MAGNYFYING_FITNESS * self.calculate_individual_harm(pedestrian_id, collision_data)
             self.total_harm_score += harm_score
             #print(f"Calculated harm score for pedestrian {pedestrian_id}: {harm_score}")
+            
 
             
 
