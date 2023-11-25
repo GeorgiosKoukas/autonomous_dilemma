@@ -18,7 +18,7 @@ from configobj import ConfigObj
 
 
 NUM_GROUPS = 3
-NUM_EPISODES = 3
+NUM_EPISODES = 10
 NUM_GENERATIONS = 1
 
 

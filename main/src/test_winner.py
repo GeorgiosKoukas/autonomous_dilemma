@@ -2,18 +2,6 @@ from utils import *
 from trolley_scenario import TrolleyScenario
 pedestrian_data = pd.read_csv('trolley.csv')
         
-
-
-def set_random_offsets():
-
-        offset_group_0 = carla.Vector3D(0, random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0) # The first group is always in the middle
-        offset_other_groups = carla.Vector3D(random.uniform(MIN_OFFSET_X, MAX_OFFSET_X), random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0)
-        return offset_group_0, offset_other_groups
-        
-
-  
-
-    
 def plot_results():
     # Harm Score over Scenarios
     plt.figure()
@@ -121,62 +109,64 @@ if __name__ == "__main__":
     world = client.get_world()
     settings = world.get_settings()
     settings.synchronous_mode = True
+    settings.no_rendering_mode = True
     weather_params = {
         'cloudiness': 0.0,
         'precipitation': 50.0,
         'sun_altitude_angle': 90.0
     }
-ages_hit = []
-num_scenarios = 100  # or any number of scenarios for every car
-for _ in range(num_scenarios):
-    groups_config = {
-        'groups': [
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-            {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-            #{'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)}
-            # You can add more groups here by following the same structure
-        ]
-    }
-    group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
-    total_pedestrians = sum([group['number'] for group in groups_config['groups']])
-    scenario_attributes = groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets
-    
-    # Initialize the scenario with the random attributes
-    scenario = TrolleyScenario(*scenario_attributes)
-
-
-    # Test the loaded_winner_net with this scenario
-    scenario.run(loaded_winner_net)
-    results['harm_scores'].append(scenario.total_harm_score)
-    results['pedestrians_hit'].append(len(scenario.collided_pedestrians))
-    results['pedestrian_ages'].append(scenario.pedestrian_ages)
-   
-    if len(scenario.collided_pedestrians) > 0:
-        collided_pedestrians = [x for x in scenario.collided_pedestrians]
-        pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
-        results['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
-        max_age = max(max(results['pedestrian_ages']))
-        min_age = min(min(results['pedestrian_ages']))
-
-        try:
-            normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
+    world.apply_settings(settings)
+    ages_hit = []
+    num_scenarios = 300  # or any number of scenarios for every car
+    for _ in range(num_scenarios):
+        groups_config = {
+            'groups': [
+                {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
+                {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
+                {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
+                #{'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)}
+                # You can add more groups here by following the same structure
+            ]
+        }
+        group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
+        total_pedestrians = sum([group['number'] for group in groups_config['groups']])
+        scenario_attributes = groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets
         
-        except ZeroDivisionError:
-            normalized_age_hit = [1 for age in pedestrian_hit_ages]
+        # Initialize the scenario with the random attributes
+        scenario = TrolleyScenario(*scenario_attributes)
 
-        scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
-        ages_hit.append(scenario_age_hit)
 
-    else:
-        ages_hit.append(2)
+        # Test the loaded_winner_net with this scenario
+        scenario.run(loaded_winner_net)
+        results['harm_scores'].append(scenario.total_harm_score)
+        results['pedestrians_hit'].append(len(scenario.collided_pedestrians))
+        results['pedestrian_ages'].append(scenario.pedestrian_ages)
+    
+        if len(scenario.collided_pedestrians) > 0:
+            collided_pedestrians = [x for x in scenario.collided_pedestrians]
+            pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
+            results['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
+            max_age = max(max(results['pedestrian_ages']))
+            min_age = min(min(results['pedestrian_ages']))
 
-    results['harm_scores'] = []
-    results['pedestrians_hit'] = []
-    results['pedestrian_ages'] = []
-fig, ax = plt.subplots()
+            try:
+                normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
+            
+            except ZeroDivisionError:
+                normalized_age_hit = [1 for age in pedestrian_hit_ages]
 
-ax.hist(ages_hit, bins=15, linewidth=0.5, edgecolor="white")
-plt.show()
+            scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
+            ages_hit.append(scenario_age_hit)
+
+        else:
+            ages_hit.append(2)
+
+        results['harm_scores'] = []
+        results['pedestrians_hit'] = []
+        results['pedestrian_ages'] = []
+    fig, ax = plt.subplots()
+
+    ax.hist(ages_hit, bins=15, linewidth=0.5, edgecolor="white")
+    plt.show()
 
     
