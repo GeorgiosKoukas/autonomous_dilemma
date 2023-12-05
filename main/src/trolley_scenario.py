@@ -26,6 +26,7 @@ class TrolleyScenario:
         self.obstacle = None
         self.pedestrian_ages = []
         self.reacted_pedestrians = {}
+        self.passenger_ages = []
 
     def setup_variables(self, groups_config, client):
         
@@ -39,6 +40,9 @@ class TrolleyScenario:
         self.radius_x, self.radius_y = 0.5, 0.5
         self.collided_pedestrians = set()
         self.total_harm_score = 0
+        self.passenger_ages.append(random.randint(18, 60))
+        for passenger in NUM_PASSENGERS-1:
+            self.passenger_ages.append(random.randint(1, 90))
 
     def set_weather(self):
         
@@ -175,7 +179,10 @@ class TrolleyScenario:
     def calculate_individual_harm(self, pedestrian_id, collision_data):
 
         pedestrian = self.pedestrian_attributes[pedestrian_id]
-        harm_score = WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data['ego_speed']) + WEIGHT_AGE * normalize_age(collision_data['pedestrian_age'])
+        harm_score = ( ETHICAL_KNOB * 
+                    (WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data['ego_speed']) + WEIGHT_AGE * (1-normalize_age(collision_data['pedestrian_age'])) + 
+                    (1-ETHICAL_KNOB)*
+                    (WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data['ego_speed']) + WEIGHT_AGE * sum(1 - normalize_age(passenger) for passenger in self.passenger_ages))/CAR_SAFETY_FACTOR))
 
         return harm_score
     
@@ -206,7 +213,8 @@ class TrolleyScenario:
                     #'location': event.transform.location,
                     'ego_speed': (self.ego.get_velocity().x**2 + self.ego.get_velocity().y**2 + self.ego.get_velocity().z**2)**0.5,
                 }
-                harm_score = MAGNYFYING_FITNESS * (WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data['ego_speed'])) 
+                harm_score = MAGNYFYING_FITNESS * (WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data['ego_speed']) + WEIGHT_AGE * sum(1 - normalize_age(passenger) for passenger in self.passenger_ages))/CAR_SAFETY_FACTOR
+                                                   
                 self.total_harm_score += harm_score
                 
                     
@@ -220,7 +228,7 @@ class TrolleyScenario:
                 'pedestrian_age': self.pedestrian_attributes[pedestrian_id]['age']
             }
                 
-            harm_score = MAGNYFYING_FITNESS * self.calculate_individual_harm(pedestrian_id, collision_data)
+            harm_score = MAGNYFYING_FITNESS * self.calculate_individual_harm(pedestrian_id, collision_data) 
             self.total_harm_score += harm_score
             #print(f"Calculated harm score for pedestrian {pedestrian_id}: {harm_score}")
             
@@ -309,7 +317,6 @@ class TrolleyScenario:
     
     def run(self, net): 
 
-        #atexit.register(self.destroy_all) for some reason it breaks the script???
         if not self.spawn_ego():
             self.destroy_all()
             return False
