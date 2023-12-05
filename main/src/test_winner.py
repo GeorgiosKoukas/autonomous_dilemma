@@ -2,7 +2,7 @@ from utils import *
 from trolley_scenario import TrolleyScenario
 pedestrian_data = pd.read_csv('trolley.csv')
         
-def plot_results():
+def plot_results(results):
     # Harm Score over Scenarios
     plt.figure()
     plt.plot(results['harm_scores'], marker='o')
@@ -51,14 +51,9 @@ def compute_average_steering(all_scenario_steering_values):
 
     return average_steering_over_time
 all_scenario_steering_values = []
-results = {
-            'harm_scores': [],
-            'pedestrians_hit': [],
-            'total_pedestrians': [],
-            'pedestrian_ages': [],
-            'pedestrian_hit_ages': [],
-            'avg_steering': []
-        } 
+
+results_neat_model, results_left_model, results_right_model, results_straight_model = (create_results_dictionary() for _ in range(4))
+
  
 def plot_average_steering(average_steering):
     plt.figure()
@@ -119,15 +114,7 @@ if __name__ == "__main__":
     ages_hit = []
     num_scenarios = 300  # or any number of scenarios for every car
     for _ in range(num_scenarios):
-        groups_config = {
-            'groups': [
-                {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-                {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-                {'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)},
-                #{'number': random.randint(MIN_PEDS, MAX_PEDS), 'rotation': carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007)}
-                # You can add more groups here by following the same structure
-            ]
-        }
+        groups_config = generate_groups_config(NUM_GROUPS)
         group_offsets = [set_random_offsets()[0] if i == 0 else set_random_offsets()[1] for i in range(len(groups_config['groups']) + 1)]
         total_pedestrians = sum([group['number'] for group in groups_config['groups']])
         scenario_attributes = groups_config, client, weather_params, pedestrian_data.sample(total_pedestrians).to_dict('records'), [[generate_spawn_location() for _ in range(group['number'])] for group in groups_config['groups']], group_offsets
@@ -138,16 +125,17 @@ if __name__ == "__main__":
 
         # Test the loaded_winner_net with this scenario
         scenario.run(loaded_winner_net)
-        results['harm_scores'].append(scenario.total_harm_score)
-        results['pedestrians_hit'].append(len(scenario.collided_pedestrians))
-        results['pedestrian_ages'].append(scenario.pedestrian_ages)
+
+        results_neat_model['harm_scores'].append(scenario.total_harm_score)
+        results_neat_model['pedestrians_hit'].append(len(scenario.collided_pedestrians))
+        results_neat_model['pedestrian_ages'].append(scenario.pedestrian_ages)
     
         if len(scenario.collided_pedestrians) > 0:
             collided_pedestrians = [x for x in scenario.collided_pedestrians]
             pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
-            results['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
-            max_age = max(max(results['pedestrian_ages']))
-            min_age = min(min(results['pedestrian_ages']))
+            results_neat_model['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
+            max_age = max(max(results_neat_model['pedestrian_ages']))
+            min_age = min(min(results_neat_model['pedestrian_ages']))
 
             try:
                 normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
@@ -161,9 +149,99 @@ if __name__ == "__main__":
         else:
             ages_hit.append(2)
 
-        results['harm_scores'] = []
-        results['pedestrians_hit'] = []
-        results['pedestrian_ages'] = []
+        results_neat_model['harm_scores'] = []
+        results_neat_model['pedestrians_hit'] = []
+        results_neat_model['pedestrian_ages'] = []
+
+        scenario.trivial_run('left')
+
+        results_left_model['harm_scores'].append(scenario.total_harm_score)
+        results_left_model['pedestrians_hit'].append(len(scenario.collided_pedestrians))
+        results_left_model['pedestrian_ages'].append(scenario.pedestrian_ages)
+    
+        if len(scenario.collided_pedestrians) > 0:
+            collided_pedestrians = [x for x in scenario.collided_pedestrians]
+            pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
+            results_left_model['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
+            max_age = max(max(results_left_model['pedestrian_ages']))
+            min_age = min(min(results_left_model['pedestrian_ages']))
+
+            try:
+                normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
+            
+            except ZeroDivisionError:
+                normalized_age_hit = [1 for age in pedestrian_hit_ages]
+
+            scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
+            ages_hit.append(scenario_age_hit)
+
+        else:
+            ages_hit.append(2)
+
+        results_left_model['harm_scores'] = []
+        results_left_model['pedestrians_hit'] = []
+        results_left_model['pedestrian_ages'] = []
+
+
+        scenario.trivial_run('right')
+
+        results_right_model['harm_scores'].append(scenario.total_harm_score)
+        results_right_model['pedestrians_hit'].append(len(scenario.collided_pedestrians))
+        results_right_model['pedestrian_ages'].append(scenario.pedestrian_ages)
+    
+        if len(scenario.collided_pedestrians) > 0:
+            collided_pedestrians = [x for x in scenario.collided_pedestrians]
+            pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
+            results_right_model['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
+            max_age = max(max(results_right_model['pedestrian_ages']))
+            min_age = min(min(results_right_model['pedestrian_ages']))
+
+            try:
+                normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
+            
+            except ZeroDivisionError:
+                normalized_age_hit = [1 for age in pedestrian_hit_ages]
+
+            scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
+            ages_hit.append(scenario_age_hit)
+
+        else:
+            ages_hit.append(2)
+
+        results_right_model['harm_scores'] = []
+        results_right_model['pedestrians_hit'] = []
+        results_right_model['pedestrian_ages'] = []
+
+
+        scenario.trivial_run('straight')
+
+
+        results_straight_model['harm_scores'].append(scenario.total_harm_score)
+        results_straight_model['pedestrians_hit'].append(len(scenario.collided_pedestrians))
+        results_straight_model['pedestrian_ages'].append(scenario.pedestrian_ages)
+    
+        if len(scenario.collided_pedestrians) > 0:
+            collided_pedestrians = [x for x in scenario.collided_pedestrians]
+            pedestrian_hit_ages = [scenario.pedestrian_attributes[collided_pedestrian]['age'] for collided_pedestrian in collided_pedestrians]
+            results_straight_model['pedestrian_hit_ages'].extend(pedestrian_hit_ages)
+            max_age = max(max(results_straight_model['pedestrian_ages']))
+            min_age = min(min(results_straight_model['pedestrian_ages']))
+
+            try:
+                normalized_age_hit = [(age - min_age) / (max_age - min_age) for age in pedestrian_hit_ages]
+            
+            except ZeroDivisionError:
+                normalized_age_hit = [1 for age in pedestrian_hit_ages]
+
+            scenario_age_hit = sum(normalized_age_hit) / len(normalized_age_hit)
+            ages_hit.append(scenario_age_hit)
+
+        else:
+            ages_hit.append(2)
+
+        results_straight_model['harm_scores'] = []
+        results_straight_model['pedestrians_hit'] = []
+        results_straight_model['pedestrian_ages'] = []
     fig, ax = plt.subplots()
 
     ax.hist(ages_hit, bins=15, linewidth=0.5, edgecolor="white")

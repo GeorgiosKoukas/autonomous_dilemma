@@ -247,8 +247,8 @@ class TrolleyScenario:
 
         return math.degrees(math.atan2(centroid_y - car_location_y, centroid_x - car_location_x))
     
-    def apply_control(self, vehicle, group_decision, steering_decision, braking_decision):
-        # Choose the group based on the decision and then compute desired_yaw
+    def apply_control(self, vehicle, steering_decision, braking_decision):
+
         neural_network_steering = 2*steering_decision - 1 # y = 2x-1, [0,1] to [-1,1]
         control = carla.VehicleControl(steer=neural_network_steering, throttle=1.0 - braking_decision, brake=braking_decision)
         vehicle.apply_control(control)
@@ -271,26 +271,24 @@ class TrolleyScenario:
         return dx, dy  
     
     def react_to_approaching_car(self, pedestrian, ego_transform, ego_velocity):
-        # Calculate distance between pedestrian and ego vehicle
+   
        
         ped_transform = pedestrian.get_transform()
         distance = ego_transform.location.distance(ped_transform.location)
 
-        # Define a threshold distance to trigger the reaction
-        reaction_distance = 10.0  # You can adjust this distance
+        reaction_distance = 10.0 
         ped_velocity = pedestrian.get_velocity()
         if distance < reaction_distance and not self.reacted_pedestrians.get(pedestrian.id, False):
-            # Calculate relative velocity between ego vehicle and pedestrian
+           
             
             
             relative_velocity = ((ego_velocity.x - ped_velocity.x )**2 + (ego_velocity.y - ped_velocity.y)**2)**0.5
 
-            # Define a threshold velocity to trigger the reaction
-            reaction_velocity_threshold = 5.0  # You can adjust this velocity
+        
+            reaction_velocity_threshold = 5.0  
 
             if relative_velocity > reaction_velocity_threshold:
 
-                # Move the pedestrian to the side
                 right_vector = ego_transform.get_right_vector()
                 scaled_vector = carla.Vector3D(random.uniform(-2, 2)*right_vector.x, random.uniform(-2, 2)*right_vector.y, 0)
                 new_location = ped_transform.location + scaled_vector
@@ -308,7 +306,6 @@ class TrolleyScenario:
             actor.destroy()
 
         self.collision_sensor.destroy()
-        #self.rss_sensor.destroy()
         self.actor_list = []
         self.actor_id_lists = [[] for _ in range(self.num_groups)]
         
@@ -323,7 +320,8 @@ class TrolleyScenario:
         
         self.spawn_actors()
         
-        self.terminate_thread = False  # Initialize the flag
+        self.terminate_thread = False  
+
         thread = threading.Thread(target=self.move_spectator_with_ego)
         thread.start()
         
@@ -331,7 +329,7 @@ class TrolleyScenario:
         self.give_ego_initial_speed(MAX_SPEED)
         self.attach_collision_sensor()
         
-        #aggregated_attributes = self.compute_all_aggregated_attributes()
+
         ticks = 0
         
 
@@ -353,7 +351,6 @@ class TrolleyScenario:
                         
                         input_vector.append(self.pedestrian_attributes[pedestrian.id]['age'])
 
-                        # Call the react_to_approaching_car method for each pedestrian
                         self.react_to_approaching_car(pedestrian, self.ego.get_transform(), self.ego.get_velocity())
 
                     else:
@@ -375,6 +372,54 @@ class TrolleyScenario:
         thread.join()
         self.destroy_all()
         
+
+    def trivial_run(self, choice):
+
+        controls_mapping = {
+            'left': carla.VehicleControl(steer=-1, throttle=0, brake=1),
+            'right': carla.VehicleControl(steer=1, throttle=0, brake=1),
+            'straight': carla.VehicleControl(steer=0, throttle=0, brake=1)
+        }
+
+        
+        if choice in controls_mapping:
+            control = controls_mapping[choice]
+        else:
+            print("Invalid choice selected")
+            control = carla.VehicleControl(steer=0, throttle=0, brake=0)
+
+        if not self.spawn_ego():
+            self.destroy_all()
+            return False
+        
+        self.spawn_actors()
+        
+        self.terminate_thread = False  # Initialize the flag
+        thread = threading.Thread(target=self.move_spectator_with_ego)
+        thread.start()
+        
+        
+        self.give_ego_initial_speed(MAX_SPEED)
+        self.attach_collision_sensor()
+
+        ticks = 0
+        
+        while ticks < 200:
+            self.world.tick()
+            ticks = ticks + 1
+            M = MAX_PEDS
+            self.ego.apply_control(control)
+            
+            for group in self.group_actors: 
+                for idx in range(M):
+                    if idx < len(group):
+                        pedestrian = group[idx]
+                        self.react_to_approaching_car(pedestrian, self.ego.get_transform(), self.ego.get_velocity())
+            if(self.get_ego_abs_velocity() < 0.1):
+                break
+        self.terminate_thread = True
+        thread.join()
+        self.destroy_all()
     
         
         

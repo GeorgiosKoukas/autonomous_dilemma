@@ -120,4 +120,14 @@ def generate_spawn_location():
     spawn_z = random.uniform(0.1, 0.8)
     return carla.Location(spawn_x, spawn_y, spawn_z)
 
+def create_results_dictionary():
+    return {
+        'harm_scores': [],
+        'pedestrians_hit': [],
+        'total_pedestrians': [],
+        'pedestrian_ages': [],
+        'pedestrian_hit_ages': [],
+        'avg_steering': []
+    }
+
 
