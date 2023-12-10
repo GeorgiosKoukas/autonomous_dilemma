@@ -51,17 +51,9 @@ if __name__ == "__main__":
     client = carla.Client("localhost", 2000)
     client.set_timeout(15)
     world = client.get_world()
-    settings = world.get_settings()
-    settings.synchronous_mode = True
-    #settings.no_rendering_mode = True
-    weather_params = {
-        "cloudiness": 0.0,
-        "precipitation": 50.0,
-        "sun_altitude_angle": 90.0,
-    }
-    world.apply_settings(settings)
+    settings_setter(world)
     ages_hit = []
-    num_scenarios = 10  # or any number of scenarios for every car
+    num_scenarios = 100  # or any number of scenarios for every car
     scores_neat_model = []
     scores_left_model = []
     scores_right_model = []
@@ -70,7 +62,7 @@ if __name__ == "__main__":
         model_directions = ["", "left", "right", "straight"]
         results = {}
         scores = {}
-        attributes = generate_scenario_attributes(client, weather_params)
+        attributes = generate_scenario_attributes(client)
         # for direction in model_directions:
         #     results[direction] = run_test_scenario(client, attributes, direction)
         #     scores[direction] = score_calculator(results[direction])
@@ -79,16 +71,16 @@ if __name__ == "__main__":
         # print(scores)
 
         results_neat_model, score_neat_model = run_test_scenario(
-            client, generate_scenario_attributes(client, weather_params), trivial_run = "no"
+            client, generate_scenario_attributes(client), trivial_run = "no"
         )
         results_left_model, score_left_model = run_test_scenario(
-            client, generate_scenario_attributes(client, weather_params), trivial_run = "left"
+            client, generate_scenario_attributes(client), trivial_run = "left"
         )
         results_right_model, score_right_model = run_test_scenario(
-            client, generate_scenario_attributes(client, weather_params), trivial_run = "right"
+            client, generate_scenario_attributes(client), trivial_run = "right"
         )
         results_straight_model, score_straight_model = run_test_scenario(
-            client, generate_scenario_attributes(client, weather_params), trivial_run = "straight"
+            client, generate_scenario_attributes(client), trivial_run = "straight"
         )
 
         scores_neat_model.append(score_neat_model)
@@ -101,10 +93,10 @@ if __name__ == "__main__":
         results_right_model = []
         results_straight_model = []
 
-    print(f"Neat model scores: {scores_neat_model}")
-    print(f"Left model scores: {scores_left_model}")
-    print(f"Right model scores: {scores_right_model}")
-    print(f"Straight model scores: {scores_straight_model}")
+    print(f"Neat model average score: {sum(scores_neat_model) / len(scores_neat_model)}")
+    print(f"Left model average score: {sum(scores_left_model) / len(scores_left_model)}")
+    print(f"Right model average score: {sum(scores_right_model) / len(scores_right_model)}")
+    print(f"Straight model average score: {sum(scores_straight_model) / len(scores_straight_model)}")
 
         # Number of scenarios - should match the length of your score lists
     num_scenarios = len(scores_neat_model)

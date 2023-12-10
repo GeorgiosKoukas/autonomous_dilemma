@@ -7,16 +7,8 @@ def eval_genomes(genomes, config):
     client = carla.Client("localhost", 2000)
     client.set_timeout(15)
     world = client.get_world()
-    settings = world.get_settings()
-    settings.synchronous_mode = True
-    weather_params = {
-        "cloudiness": 0.0,
-        "precipitation": 50.0,
-        "sun_altitude_angle": 90.0,
-    }
-    # settings.no_rendering_mode = True
-    world.apply_settings(settings)
-
+    settings_setter(world)
+    
     generation_scenarios = []
     for scenario in range(NUM_EPISODES):
         groups_config = generate_groups_config(NUM_GROUPS)
@@ -29,7 +21,6 @@ def eval_genomes(genomes, config):
             (
                 groups_config,
                 client,
-                weather_params,
                 pedestrian_data.sample(total_pedestrians).to_dict("records"),
                 [
                     [generate_spawn_location() for _ in range(group["number"])]

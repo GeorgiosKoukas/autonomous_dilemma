@@ -15,8 +15,8 @@ from configobj import ConfigObj
 
 
 NUM_GROUPS = 3
-NUM_EPISODES = 1
-NUM_GENERATIONS = 2
+NUM_EPISODES = 3
+NUM_GENERATIONS = 120
 
 NUM_PASSENGERS = 2
 ETHICAL_KNOB = 0.9
@@ -38,7 +38,7 @@ WEIGHT_COLISSION_SPEED = 0.7
 WEIGHT_AGE = 0.3
 WEIGHT_OBSTACLE_COLISSION = 0.2
 
-MAGNYFYING_FITNESS = 100
+MAGNYFYING_FITNESS = 200
 
 pedestrian_data = pd.read_csv("trolley.csv")
 
@@ -50,28 +50,37 @@ def score_calculator(results, scenario):
     passengers_harm = 0
 
     for pedestrian_hit in results["pedestrian_collisions"]:
-        print(f"min age: {results['min_age']}")
-        print(f"max age: {results['max_age']}")
-        print(f"normalized_speed: {normalize_velocity(pedestrian_hit['speed'])}")
         pedestrians_harm += 1 - (
-            pedestrian_hit["pedestrian_age"] - results["min_age"]
-        ) / (results["max_age"] - results["min_age"]) * normalize_velocity(
+            normalize_input(pedestrian_hit["pedestrian_age"], results["min_age"], results["max_age"])
+            ) * normalize_velocity(
             pedestrian_hit["speed"]
         )
         for passenger_age in results["passengers"]["age"]:
-            passengers_harm += 1 - (
-                passenger_age - min(results["passengers"]["age"])
-            ) / (
-                max(results["passengers"]["age"]) - min(results["passengers"]["age"])
-            ) * normalize_velocity(pedestrian_hit["speed"])
+            passengers_harm += 1 - (normalize_input(passenger_age, min(results["passengers"]["age"]), max(results["passengers"]["age"]))
+         ) * normalize_velocity(pedestrian_hit["speed"])
 
     normalized_pedestrians_harm = pedestrians_harm / scenario.total_pedestrians
     normalized_passengers_harm = passengers_harm / len(results["passengers"]["age"]) / CAR_SAFETY_FACTOR
 
     # Apply ETHICAL_KNOB
-    harm = 1 - (ETHICAL_KNOB * normalized_pedestrians_harm + (1 - ETHICAL_KNOB) * normalized_passengers_harm)
+    harm = (ETHICAL_KNOB * normalized_pedestrians_harm + (1 - ETHICAL_KNOB) * normalized_passengers_harm)
 
     return harm
+def normalize_input(value, min_val, max_val):
+    if max_val == min_val:
+        return 0.0   
+    return (value - min_val) / (max_val - min_val)
+def settings_setter(world):
+    settings = world.get_settings()
+    settings.synchronous_mode = True
+    weather_params = {
+        "cloudiness": 0.0,
+        "precipitation": 50.0,
+        "sun_altitude_angle": 90.0,
+    }
+    #settings.no_rendering_mode = True
+    settings.fixed_delta_seconds = 0.05 
+    world.apply_settings(settings)
 def generate_node_names(max_peds, num_groups):
     node_names = {}
     node_counter = 1
@@ -144,7 +153,7 @@ def normalize_velocity(velocity):
     return velocity / MAX_SPEED
 
 
-def generate_scenario_attributes(client, weather_params):
+def generate_scenario_attributes(client):
     scenario_results = create_results_dictionary()
     groups_config = generate_groups_config(NUM_GROUPS)
     group_offsets = [
@@ -155,7 +164,6 @@ def generate_scenario_attributes(client, weather_params):
     scenario_attributes = (
         groups_config,
         client,
-        weather_params,
         pedestrian_data.sample(total_pedestrians).to_dict("records"),
         [
             [generate_spawn_location() for _ in range(group["number"])]

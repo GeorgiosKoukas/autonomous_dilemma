@@ -8,7 +8,7 @@ class TrolleyScenario:
         self,
         groups_config,
         client,
-        weather,
+        #weather,
         pre_sampled_attributes,
         generation_spawn_locations,
         group_offsets,
@@ -16,7 +16,7 @@ class TrolleyScenario:
         self.num_groups = len(groups_config["groups"])
         self.setup_variables(groups_config, client)
         self.set_spawn_locations()
-        self.weather_params = weather
+        #self.weather_params = weather
 
         self.pedestrian_bp = self.world.get_blueprint_library().filter("*pedestrian*")
         self.obstacle_bp = self.world.get_blueprint_library().filter(
@@ -89,7 +89,7 @@ class TrolleyScenario:
                     break 
     def move_spectator_with_ego(self):
         while not self.terminate_thread:
-            time.sleep(0.02)  # A slight delay to avoid excessive updates
+            time.sleep(0.05)  # A slight delay to avoid excessive updates
 
             ego_transform = self.ego.get_transform()
 
@@ -207,9 +207,10 @@ class TrolleyScenario:
             return False
 
     def normalize_age(self, age):
-        self.pedestrian_ages
         max_age = max(self.pedestrian_ages)
         min_age = min(self.pedestrian_ages)
+        if max_age == min_age:
+            return 0
         return (age - min_age) / (max_age - min_age)
 
     def calculate_individual_harm(self, pedestrian_id, collision_data):
