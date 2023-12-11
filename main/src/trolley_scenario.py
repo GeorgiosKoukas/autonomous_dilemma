@@ -509,33 +509,4 @@ class TrolleyScenario:
         self.destroy_all()
 
 
-# def compute_aggregated_attributes(self, lane_list):
-#     aggregated_attributes = {
-#         'average_expected_years_left': 0,
-#         'average_health': 0,
-#         'average_contribution': 0,
-#         'average_dependents': 0
-#     }
 
-#     for actor in lane_list:
-#         attributes = self.pedestrian_attributes[actor.id]
-#         aggregated_attributes['average_expected_years_left'] += attributes['expected_years_left']
-#         aggregated_attributes['average_health'] += 10 if attributes['health'] == 1 else 5
-#         aggregated_attributes['average_contribution'] += 10 if attributes['contribution_to_humanity'] == 1 else 5
-#         aggregated_attributes['average_dependents'] += attributes['no_of_dependant']
-
-#     num_pedestrians = len(lane_list)
-#     for key in aggregated_attributes:
-#         try:
-#             aggregated_attributes[key] /= num_pedestrians
-#         except ZeroDivisionError:
-#             aggregated_attributes[key] /= 1
-
-
-#     return aggregated_attributes
-
-# def compute_all_aggregated_attributes(self):
-#     all_attributes = []
-#     for group in self.group_actors:
-#         all_attributes.append(self.compute_aggregated_attributes(group))
-#     return all_attributes

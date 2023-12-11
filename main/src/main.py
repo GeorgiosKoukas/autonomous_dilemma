@@ -15,18 +15,12 @@ def run(config_path):
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-49")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-183")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
         p.add_reporter(checkpoint)
-        with open("winner_net.pkl", "wb") as output:
-            winner = p.run(eval_genomes, NUM_GENERATIONS)
-            node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
-            visualize.draw_net(config, winner, True, node_names=node_names)
-            visualize.plot_stats(stats, ylog=False, view=True)
-            visualize.plot_species(stats, view=True)
-            winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+        
     else:
         p = neat.Population(config)
         p.add_reporter(neat.StdOutReporter(True))
@@ -35,13 +29,17 @@ def run(config_path):
 
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
         p.add_reporter(checkpoint)
-        winner = p.run(eval_genomes, NUM_GENERATIONS)
-        node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
-        visualize.draw_net(config, winner, True, node_names=node_names)
-        visualize.plot_stats(stats, ylog=False, view=True)
-        visualize.plot_species(stats, view=True)
-        winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-        pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
+    try:
+        with open("winner_net.pkl", "wb") as output:
+            winner = p.run(eval_genomes, NUM_GENERATIONS)
+            node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
+            visualize.draw_net(config, winner, True, node_names=node_names)
+            visualize.plot_stats(stats, ylog=False, view=True)
+            visualize.plot_species(stats, view=True)
+            winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+            pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
+    except Exception as e: 
+        print(f"Error when pickling the winner: {e}")
 
 
 if __name__ == "__main__":
