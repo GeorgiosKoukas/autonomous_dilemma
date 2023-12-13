@@ -1,14 +1,10 @@
-# Provoles dianismatwn se reaction pedestrians
-
 from utils import *
-
 
 class TrolleyScenario:
     def __init__(
         self,
         groups_config,
         client,
-        #weather,
         pre_sampled_attributes,
         generation_spawn_locations,
         group_offsets,
@@ -16,7 +12,6 @@ class TrolleyScenario:
         self.num_groups = len(groups_config["groups"])
         self.setup_variables(groups_config, client)
         self.set_spawn_locations()
-        #self.weather_params = weather
 
         self.pedestrian_bp = self.world.get_blueprint_library().filter("*pedestrian*")
         self.obstacle_bp = self.world.get_blueprint_library().filter(
@@ -60,7 +55,7 @@ class TrolleyScenario:
         self.total_harm_score = 0
         self.passengers = {"age": []}
         self.passengers["age"].append(random.randint(18, 60))
-        for passenger in range(NUM_PASSENGERS - 1):
+        for _ in range(NUM_PASSENGERS - 1):
             self.passengers["age"].append(random.randint(1, 90))
         self.adjust_passenger_ages_if_identical()
     def set_weather(self):
@@ -119,10 +114,6 @@ class TrolleyScenario:
     def spawn_obstacle(self):
         ego_transform = self.transform_ego
 
-        forward_vector = ego_transform.get_forward_vector()
-        right_vector = ego_transform.get_right_vector()
-        up_vector = ego_transform.get_up_vector()
-
         location_offset = self.group_offsets[-1]
 
         spawn_x = ego_transform.location.x + random.choice(
@@ -150,10 +141,6 @@ class TrolleyScenario:
         group_list = []
         ego_transform = self.transform_ego
 
-        forward_vector = ego_transform.get_forward_vector()
-        right_vector = ego_transform.get_right_vector()
-        up_vector = ego_transform.get_up_vector()
-
         location_offset = self.group_offsets[group_idx]
 
         spawn_x = ego_transform.location.x + location_offset.x
@@ -161,8 +148,6 @@ class TrolleyScenario:
         spawn_z = ego_transform.location.z + location_offset.z
         spawn_location = carla.Location(spawn_x, spawn_y, spawn_z)
 
-        # Create a transform for the center of the Group
-        pedestrian_transform = carla.Transform(spawn_location)
         for idx in range(group_config["number"]):
             location_offset = self.generation_spawn_locations[group_idx][idx]
             ped_transform = carla.Transform(
@@ -179,7 +164,7 @@ class TrolleyScenario:
                 self.assign_pedestrian_attributes(actor, idx)
                 group_list.append(actor)
                 self.pedestrian_ages.append(self.pedestrian_attributes[actor.id]["age"])
-                # print(group_list)
+      
 
         return spawn_location, group_list
 
@@ -190,13 +175,12 @@ class TrolleyScenario:
             )
             self.spawn_locations.append(spawn_location)
             self.group_actors[idx] = group_actors
-            self.spawn_obstacle()
+        self.spawn_obstacle()
 
     def spawn_ego(self):
         self.ego = self.world.try_spawn_actor(
             random.choice(self.vehicle_bp), self.transform_ego
         )
-        transform = self.transform_ego
 
         if self.ego:
             self.actor_list.append(self.ego)
@@ -213,97 +197,62 @@ class TrolleyScenario:
             return 0
         return (age - min_age) / (max_age - min_age)
 
-    def calculate_individual_harm(self, pedestrian_id, collision_data):
-        harm_score = ETHICAL_KNOB * (
-            WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data["ego_speed"])
-            + WEIGHT_AGE * (1 - self.normalize_age(collision_data["pedestrian_age"]))
-            + (1 - ETHICAL_KNOB)
-            * (
-                WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data["ego_speed"])
-                + WEIGHT_AGE
-                * sum(
-                    1 - self.normalize_age(passenger)
-                    for passenger in self.passengers["age"]
-                )
-            )
-            / CAR_SAFETY_FACTOR
-        )
+    # def calculate_individual_harm(self, collision_data):
+    #     harm_score = ETHICAL_KNOB * (
+    #         WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data["ego_speed"])
+    #         + WEIGHT_AGE * (1 - self.normalize_age(collision_data["pedestrian_age"]))
+    #         + (1 - ETHICAL_KNOB)
+    #         * (
+    #             WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data["ego_speed"])
+    #             + WEIGHT_AGE
+    #             * sum(
+    #                 1 - self.normalize_age(passenger)
+    #                 for passenger in self.passengers["age"]
+    #             )
+    #         )
+    #         / CAR_SAFETY_FACTOR
+    #     )
 
-        return harm_score
+        # return harm_score
 
     def update_scenario_results(
-        self, pedestrian_id, collision_data, harm_score, pedestrian_colission=True
+        self, collision_data, pedestrian_collision
     ):
-        if pedestrian_colission:
+        if pedestrian_collision:
             collision_info = {
                 "speed": collision_data["ego_speed"],
-                "harm_score": harm_score,
                 "pedestrian_age": collision_data["pedestrian_age"],
             }
+            #print(f"Pedestrian Collision: {collision_info}")
             self.results["pedestrian_collisions"].append(collision_info)
         else:
             collision_info = {
                 "speed": collision_data["ego_speed"],
-                "harm_score": harm_score,
             }
+            #print(f"Other Collision: {collision_info}")
             self.results["other_collisions"].append(collision_info)
 
     def on_collision(self, event):
-        pedestrian_id = event.other_actor.id
-
+        hit_id = event.other_actor.id
+        # print(f"Collided with {event.other_actor.type_id} {hit_id}")
+        # print(type(event.other_actor.type_id))
         # Check if the actor is in any of the actor_id lists (lanes/groups)
         collided_group = None
         for idx, actor_id_list in enumerate(self.actor_id_lists):
-            if pedestrian_id in actor_id_list:
+            if hit_id in actor_id_list:
                 collided_group = idx
                 break
 
-        # If the actor was in any lane/group
+            
         if collided_group is not None:
-            if pedestrian_id in self.collided_pedestrians:
+            # Dont record the hit of the same actor more than once
+            if hit_id in self.collided_pedestrians:
                 return
 
-            if (
-                pedestrian_id is self.obstacle.id
-                or pedestrian_id not in self.actor_id_lists
-            ):
-                """
-                If the ego hits something other (!wall or obstacle!) than pedestrians there still punishment but less
-                """
-                self.collided_pedestrians.add(pedestrian_id)
-                collision_data = {
-                    #'timestamp': event.timestamp,
-                    #'location': event.transform.location,
-                    "ego_speed": (
-                        self.ego.get_velocity().x ** 2
-                        + self.ego.get_velocity().y ** 2
-                        + self.ego.get_velocity().z ** 2
-                    )
-                    ** 0.5,
-                }
-                harm_score = (
-                    MAGNYFYING_FITNESS
-                    * (
-                        WEIGHT_COLISSION_SPEED
-                        * normalize_velocity(collision_data["ego_speed"])
-                        + WEIGHT_AGE
-                        * sum(
-                            1 - self.normalize_age(passenger)
-                            for passenger in self.passengers["age"]
-                        )
-                    )
-                    / CAR_SAFETY_FACTOR
-                )
+                
+        if any(hit_id in group for group in self.actor_id_lists):
 
-                self.total_harm_score += harm_score
-                self.update_scenario_results(
-                    pedestrian_id,
-                    collision_data,
-                    harm_score,
-                    pedestrian_colission=False,
-                )
-
-            self.collided_pedestrians.add(pedestrian_id)
+            self.collided_pedestrians.add(hit_id)
             collision_data = {
                 #'timestamp': event.timestamp,
                 #'location': event.transform.location,
@@ -314,17 +263,39 @@ class TrolleyScenario:
                 )
                 ** 0.5,
                 #'collision_angle': calculate_collision_angle(self.ego, event.other_actor)
-                "pedestrian_age": self.pedestrian_attributes[pedestrian_id]["age"],
+                "pedestrian_age": self.pedestrian_attributes[hit_id]["age"],
             }
-
-            harm_score = MAGNYFYING_FITNESS * self.calculate_individual_harm(
-                pedestrian_id, collision_data
-            )
-            self.total_harm_score += harm_score
+            pedestrian_collision = True
             self.update_scenario_results(
-                pedestrian_id, collision_data, harm_score, pedestrian_colission=True
+                collision_data, pedestrian_collision
             )
-            # print(f"Calculated harm score for pedestrian {pedestrian_id}: {harm_score}")
+            # print(f"Calculated harm score for pedestrian {hit_id}: {harm_score}")
+
+
+            
+        else:
+            # print(f"hit_id: {hit_id}")
+            # print(f"actor_id_lists: {self.actor_id_lists}")
+            # print(f"obstacle_id: {self.obstacle.id}")
+            """
+            If the ego hits something other (!wall or obstacle!) than pedestrians there still punishment but less
+            """
+            #self.collided_pedestrians.add(hit_id)
+            collision_data = {
+                #'timestamp': event.timestamp,
+                #'location': event.transform.location,
+                "ego_speed": (
+                    self.ego.get_velocity().x ** 2
+                    + self.ego.get_velocity().y ** 2
+                    + self.ego.get_velocity().z ** 2
+                )
+                ** 0.5,
+            }
+            pedestrian_collision = False
+            self.update_scenario_results(
+                collision_data,
+                pedestrian_collision
+            )
 
     def attach_collision_sensor(self):
         bp = self.world.get_blueprint_library().find("sensor.other.collision")
@@ -486,8 +457,9 @@ class TrolleyScenario:
                     print("Invalid choice selected")
                     control = carla.VehicleControl(steer=0, throttle=0, brake=0)
                 M = MAX_PEDS
-                self.ego.apply_control(control)
-
+                if ticks > 10: #Least possible human reaction time 0.5 seconds (sources say 0.75, i'm being generous)
+                    self.ego.apply_control(control)
+                
                 for group in self.group_actors:
                     for idx in range(M):
                         if idx < len(group):

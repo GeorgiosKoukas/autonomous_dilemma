@@ -15,11 +15,11 @@ from configobj import ConfigObj
 
 
 NUM_GROUPS = 3
-NUM_EPISODES = 3
-NUM_GENERATIONS = 20
+NUM_EPISODES = 20
+NUM_GENERATIONS = 1
 
 NUM_PASSENGERS = 2
-ETHICAL_KNOB = 0.9
+ETHICAL_KNOB = 0.8
 CAR_SAFETY_FACTOR = 1
 
 MIN_PEDS = 1
@@ -58,10 +58,16 @@ def score_calculator(results, scenario):
         for passenger_age in results["passengers"]["age"]:
             passengers_harm += 1 - (normalize_input(passenger_age, min(results["passengers"]["age"]), max(results["passengers"]["age"]))
          ) * normalize_velocity(pedestrian_hit["speed"])
-
+    for obstacle_hit in results["other_collisions"]:
+        for passenger_age in results["passengers"]["age"]:
+            passengers_harm += 1 - (normalize_input(passenger_age, min(results["passengers"]["age"]), max(results["passengers"]["age"]))
+         ) * normalize_velocity(obstacle_hit["speed"])
+    #HAVE TO TAKE INTO ACCOUNT COLISSIONS WITH OBSTACLES OR WALLS
     normalized_pedestrians_harm = pedestrians_harm / scenario.total_pedestrians
-    normalized_passengers_harm = passengers_harm / len(results["passengers"]["age"]) / CAR_SAFETY_FACTOR
-
+    if (len(results["pedestrian_collisions"]) + len(results["other_collisions"])) == 0:
+        normalized_passengers_harm = 0
+    else:
+        normalized_passengers_harm = passengers_harm / len(results["passengers"]["age"]) / (len(results["pedestrian_collisions"]) + len(results["other_collisions"])) / CAR_SAFETY_FACTOR
     # Apply ETHICAL_KNOB
     harm = (ETHICAL_KNOB * normalized_pedestrians_harm + (1 - ETHICAL_KNOB) * normalized_passengers_harm)
 
