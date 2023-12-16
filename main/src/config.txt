@@ -1,8 +1,8 @@
 
 [NEAT]
 fitness_criterion = max
-fitness_threshold = 1000
-pop_size = 100
+fitness_threshold = 50000
+pop_size = 500
 reset_on_extinction = False
 
 [DefaultGenome]
@@ -23,7 +23,7 @@ bias_max_value = 30.0
 bias_min_value = -30.0
 bias_mutate_power = 0.5
 bias_mutate_rate = 0.3
-bias_replace_rate = 0.1
+bias_replace_rate = 0.3
 
 # genome compatibility options
 compatibility_disjoint_coefficient = 1.0
@@ -35,18 +35,18 @@ conn_delete_prob = 0.5
 
 # connection enable options
 enabled_default = True
-enabled_mutate_rate = 0.1
+enabled_mutate_rate = 0.3
 
 feed_forward = False
 initial_connection = full_direct
 
 # node add/remove rates
-node_add_prob = 0.5
-node_delete_prob = 0.5
+node_add_prob = 0.6
+node_delete_prob = 0.6
 
 # network parameters
-num_hidden = 3
-num_inputs = 25
+num_hidden = 13
+num_inputs = 17
 num_outputs = 3
 
 # node response options
@@ -64,17 +64,18 @@ weight_init_stdev = 1.0
 weight_max_value = 30
 weight_min_value = -30
 weight_mutate_power = 0.5
-weight_mutate_rate = 0.8
+weight_mutate_rate = 0.4
 weight_replace_rate = 0.1
 
 [DefaultSpeciesSet]
-compatibility_threshold = 3.0
+compatibility_threshold = 2.5
 
 [DefaultStagnation]
 species_fitness_func = max
-max_stagnation = 20
-species_elitism = 2
+max_stagnation = 10
+species_elitism = 1
 
 [DefaultReproduction]
-elitism = 3
-survival_threshold = 0.3
+elitism = 2
+survival_threshold = 0.1
+    

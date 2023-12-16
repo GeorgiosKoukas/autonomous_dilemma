@@ -14,9 +14,12 @@ import pickle
 from configobj import ConfigObj
 
 
-NUM_GROUPS = 3
-NUM_EPISODES = 20
-NUM_GENERATIONS = 1
+NUM_GROUPS = 2
+NUM_EPISODES = 1
+NUM_MAX_EPISODES = 50
+
+NUM_GENERATIONS = 300
+RENDERING = False
 
 NUM_PASSENGERS = 2
 ETHICAL_KNOB = 0.8
@@ -38,7 +41,7 @@ WEIGHT_COLISSION_SPEED = 0.7
 WEIGHT_AGE = 0.3
 WEIGHT_OBSTACLE_COLISSION = 0.2
 
-MAGNYFYING_FITNESS = 200
+MAGNYFYING_FITNESS = 100
 
 pedestrian_data = pd.read_csv("trolley.csv")
 
@@ -84,7 +87,7 @@ def settings_setter(world):
         "precipitation": 50.0,
         "sun_altitude_angle": 90.0,
     }
-    #settings.no_rendering_mode = True
+    settings.no_rendering_mode = not RENDERING
     settings.fixed_delta_seconds = 0.05 
     world.apply_settings(settings)
 def generate_node_names(max_peds, num_groups):
@@ -115,7 +118,7 @@ def generate_groups_config(NUM_GROUPS):
     groups = []
     for _ in range(NUM_GROUPS):
         group_config = {
-            "number": random.randint(MIN_PEDS, MAX_PEDS),
+            "number": MAX_PEDS, #random.randint(MIN_PEDS, MAX_PEDS),
             "rotation": carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007),
         }
         groups.append(group_config)

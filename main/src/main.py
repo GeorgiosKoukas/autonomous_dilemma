@@ -15,7 +15,7 @@ def run(config_path):
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-165")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-127")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
@@ -59,6 +59,8 @@ if __name__ == "__main__":
     config = ConfigObj(config_path, write_empty_values=True)
     num_inputs = NUM_GROUPS * MAX_PEDS * 2 + 1
     config["DefaultGenome"]["num_inputs"] = num_inputs
-    config.write()
+    config["DefaultGenome"]["num_hidden"] = int(0.8*num_inputs)
+    config.write()# node response options
+
 
     run(config_path)

@@ -10,7 +10,7 @@ def eval_genomes(genomes, config):
     settings_setter(world)
     
     generation_scenarios = []
-    for scenario in range(NUM_EPISODES):
+    for scenario in range(NUM_MAX_EPISODES):
         groups_config = generate_groups_config(NUM_GROUPS)
         group_offsets = [
             set_random_offsets()[0] if i == 0 else set_random_offsets()[1]
@@ -43,5 +43,23 @@ def eval_genomes(genomes, config):
             # Use the results to determine the loss
             harm_score = MAGNYFYING_FITNESS*score_calculator(scenario.results, scenario)
             genome_fitness.append(-harm_score)
+            if len(scenario.collided_pedestrians) == 0:
+                genome_fitness.append(100)
+        if sum(genome_fitness)>0:
+            for attributes in range(NUM_EPISODES, NUM_MAX_EPISODES):
+                scenario_attributes = generation_scenarios[attributes]
+
+                net = neat.nn.FeedForwardNetwork.create(genome, config)
+                # Generate the same scenario for each AV in the same generation
+                scenario = TrolleyScenario(*scenario_attributes)
+                scenario.run(net, "neat", "no")
+                # Use the results to determine the loss
+                
+                harm_score = MAGNYFYING_FITNESS*score_calculator(scenario.results, scenario)
+                if abs(harm_score)>0:
+                    genome_fitness.append(-harm_score)
+                    break
+                genome_fitness.append(100)
+
         genome.fitness = sum(genome_fitness)
         print(f"Genome {genome_id} fitness: {genome.fitness}")
