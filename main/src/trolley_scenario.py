@@ -363,6 +363,20 @@ class TrolleyScenario:
                 )
                 self.reacted_pedestrians[pedestrian.id] = True
 
+    def get_relative_position(self, car_position, car_yaw, pedestrian_position):
+        # Calculate relative position
+        rel_x = pedestrian_position.x - car_position.x
+        rel_y = pedestrian_position.y - car_position.y
+
+        # Convert car yaw angle to radians
+        car_yaw_rad = math.radians(car_yaw)
+
+        # Rotate the relative position to car's local coordinate system
+        local_x = rel_x * math.cos(-car_yaw_rad) - rel_y * math.sin(-car_yaw_rad)
+        local_y = rel_x * math.sin(-car_yaw_rad) + rel_y * math.cos(-car_yaw_rad)
+
+        return local_x, local_y
+    
     def get_scenario_results(self):
         return self.total_harm_score
 
@@ -402,6 +416,7 @@ class TrolleyScenario:
             self.world.tick()
             ticks = ticks + 1
             # Get the NEAT decisions
+        
             if controlling_driver == "neat":
                 M = MAX_PEDS
                 input_vector = []
@@ -410,16 +425,18 @@ class TrolleyScenario:
                     for idx in range(M):
                         if idx < len(group):
                             pedestrian = group[idx]
-                            dx, dy = self.calculate_distance(
-                                self.ego.get_transform().location,
-                                pedestrian.get_transform().location,
+                            local_x, local_y = self.get_relative_position(
+                                self.ego.get_location(),
+                                self.ego.get_transform().rotation.yaw,
+                                pedestrian.get_location(),
                             )
-                            distance = math.sqrt(dx**2 + dy**2)
-                            input_vector.append(distance)
-
+                            input_vector.append(local_x)
+                            input_vector.append(local_y)
                             input_vector.append(
                                 self.pedestrian_attributes[pedestrian.id]["age"]
                             )
+                            #print(f"input_vector length {len(input_vector)} after pedestrian {idx} of group {group}")
+                            
 
                             self.react_to_approaching_car(
                                 pedestrian,
@@ -431,14 +448,19 @@ class TrolleyScenario:
                             input_vector.append(-9999)
                             input_vector.append(
                                 -9999
-                            )  # Padding with a large distance value
-                dx, dy = self.calculate_distance(
-                    self.ego.get_transform().location,
-                    self.obstacle.get_transform().location,
-                )
-                distance = math.sqrt(dx**2 + dy**2)
+                            )
+                            input_vector.append(
+                                -9999
+                            )    
+                local_x, local_y = self.get_relative_position(self.ego.get_location(),
+                                self.ego.get_transform().rotation.yaw,
+                                self.obstacle.get_location())
+                input_vector.append(local_x)
+                input_vector.append(local_y)
+                #print(f"input_vector length {len(input_vector)} after obstacle")
                 input_vector.append(self.get_ego_abs_velocity())
-                group_decision, steering_decision, braking_decision = net.activate(
+                #print(f"input_vector length {len(input_vector)} after speed")
+                steering_decision, braking_decision = net.activate(
                     input_vector
                 )
 

@@ -4,7 +4,7 @@ from genome_evaluator import eval_genomes
 
 def run(config_path):
     checkpoint_restorer = True
-    #checkpoint_restorer = None
+    checkpoint_restorer = None
     config = neat.config.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -15,7 +15,7 @@ def run(config_path):
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-127")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-276")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # Update the value of num_inputs
     config = ConfigObj(config_path, write_empty_values=True)
-    num_inputs = NUM_GROUPS * MAX_PEDS * 2 + 1
+    num_inputs = NUM_GROUPS * MAX_PEDS * 3 + 2 + 1
     config["DefaultGenome"]["num_inputs"] = num_inputs
     config["DefaultGenome"]["num_hidden"] = int(0.8*num_inputs)
     config.write()# node response options

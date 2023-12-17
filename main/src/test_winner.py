@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     pedestrian_data = pd.read_csv("trolley.csv")
     loaded_winner_net = load_winner_net()
-    num_scenarios = 50
+    num_scenarios = 100
     scores = run_scenarios(client, num_scenarios, loaded_winner_net)
 
     sns.set_style("dark")
