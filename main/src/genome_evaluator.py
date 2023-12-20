@@ -62,4 +62,17 @@ def eval_genomes(genomes, config):
                 genome_fitness.append(100)
 
         genome.fitness = sum(genome_fitness)
+        if genome.fitness > 900:
+            # Specify a directory to save the genomes
+            save_dir = "saved_genomes"
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            # Construct a file name based on the genome ID and fitness
+            filename = os.path.join(save_dir, f"genome_{genome_id}_fitness_{genome.fitness}.pkl")
+
+            # Dump the genome using pickle
+            with open(filename, 'wb') as f:
+                pickle.dump(genome, f)
         print(f"Genome {genome_id} fitness: {genome.fitness}")
+    

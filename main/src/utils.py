@@ -18,7 +18,7 @@ NUM_GROUPS = 2
 NUM_EPISODES = 1
 NUM_MAX_EPISODES = 50
 
-NUM_GENERATIONS = 300
+NUM_GENERATIONS = 50
 RENDERING = False
 
 NUM_PASSENGERS = 2
@@ -75,6 +75,17 @@ def score_calculator(results, scenario):
     harm = (ETHICAL_KNOB * normalized_pedestrians_harm + (1 - ETHICAL_KNOB) * normalized_passengers_harm)
 
     return harm
+
+def save_best_genome(genomes, generation):
+    # Ensure the 'winners' directory exists
+    winners_dir = os.path.join(os.path.dirname(__file__), 'winners')
+    if not os.path.exists(winners_dir):
+        os.makedirs(winners_dir)
+
+    best_genome = max(genomes, key=lambda g: g[1].fitness)
+    with open(os.path.join(winners_dir, f"winner_gen_{generation}.pkl"), "wb") as f:
+        pickle.dump(best_genome, f, pickle.HIGHEST_PROTOCOL)
+        
 def normalize_input(value, min_val, max_val):
     if max_val == min_val:
         return 0.0   

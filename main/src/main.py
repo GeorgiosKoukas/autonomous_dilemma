@@ -4,7 +4,7 @@ from genome_evaluator import eval_genomes
 
 def run(config_path):
     checkpoint_restorer = True
-    checkpoint_restorer = None
+    #checkpoint_restorer = None
     config = neat.config.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -15,11 +15,12 @@ def run(config_path):
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-276")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-399")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
         p.add_reporter(checkpoint)
+       
         try:
             with open("winner_net.pkl", "wb") as output:
                 winner = p.run(eval_genomes, NUM_GENERATIONS)
@@ -40,6 +41,7 @@ def run(config_path):
 
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
         p.add_reporter(checkpoint)
+      
         winner = p.run(eval_genomes, NUM_GENERATIONS)
         node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
         visualize.draw_net(config, winner, True, node_names=node_names)

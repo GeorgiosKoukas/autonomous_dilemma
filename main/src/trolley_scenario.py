@@ -417,7 +417,7 @@ class TrolleyScenario:
             ticks = ticks + 1
             # Get the NEAT decisions
         
-            if controlling_driver == "neat":
+            if controlling_driver.startswith("neat"):
                 M = MAX_PEDS
                 input_vector = []
 
