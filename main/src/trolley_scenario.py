@@ -1,6 +1,66 @@
 from utils import *
+from typing import Dict
+import pygame
+from pygame.locals import K_w, K_a, K_s, K_d, KEYDOWN, KEYUP, K_ESCAPE, QUIT
+
 
 class TrolleyScenario:
+    """
+    Represents a trolley scenario in an autonomous driving simulation.
+
+    Args:
+        groups_config (dict): Configuration for the pedestrian groups.
+        client (carla.Client): The client object for connecting to the simulation.
+        pre_sampled_attributes (list): Pre-sampled attributes for the pedestrians.
+        generation_spawn_locations (list): Spawn locations for the pedestrians.
+        group_offsets (list): Offsets for each pedestrian group.
+
+    Attributes:
+        num_groups (int): The number of pedestrian groups.
+        spectator (carla.Spectator): The spectator object for observing the simulation.
+        pre_sampled_attributes (list): Pre-sampled attributes for the pedestrians.
+        generation_spawn_locations (list): Spawn locations for the pedestrians.
+        spawn_locations (list): List of spawn locations for the pedestrian groups.
+        actor_id_lists (list): Lists of actor IDs for each pedestrian group.
+        lanes (list): Lists of lanes for each pedestrian group.
+        group_offsets (list): Offsets for each pedestrian group.
+        obstacle (carla.Actor): The obstacle object in the scenario.
+        reacted_pedestrians (dict): Dictionary of reacted pedestrians.
+        results (dict): Dictionary for storing scenario results.
+        pedestrian_ages (list): List of ages for the pedestrians.
+        gone_right (bool): Flag indicating if the ego vehicle has gone right.
+        gone_left (bool): Flag indicating if the ego vehicle has gone left.
+        steering (list): List of steering values.
+        groups_config (dict): Configuration for the pedestrian groups.
+        total_pedestrians (int): Total number of pedestrians in the scenario.
+        actor_list (list): List of all actors in the scenario.
+        group_actors (list): Lists of actors for each pedestrian group.
+        client (carla.Client): The client object for connecting to the simulation.
+        world (carla.World): The world object for the simulation.
+        pedestrian_attributes (dict): Dictionary of pedestrian attributes.
+        radius_x (float): The x-axis radius for the pedestrians.
+        radius_y (float): The y-axis radius for the pedestrians.
+        collided_pedestrians (set): Set of collided pedestrian IDs.
+        total_harm_score (int): Total harm score in the scenario.
+        passengers (dict): Dictionary for storing passenger information.
+
+    Methods:
+        setup_variables(groups_config, client): Set up the scenario variables.
+        set_weather(): Set the weather in the simulation.
+        set_spawn_locations(): Set the spawn locations for the scenario.
+        teleport_spectator(location): Teleport the spectator to the given location.
+        adjust_passenger_ages_if_identical(): Adjust the ages of the passengers if they are identical.
+        move_spectator_with_ego(): Move the spectator with the ego vehicle.
+        assign_pedestrian_attributes(actor, index): Assign attributes to a pedestrian actor.
+        spawn_obstacle(): Spawn the obstacle in the scenario.
+        spawn_actors_of_group(group_config, group_idx): Spawn the actors of a pedestrian group.
+        spawn_actors(): Spawn all the actors in the scenario.
+        spawn_ego(): Spawn the ego vehicle in the scenario.
+        normalize_age(age): Normalize the age of a pedestrian.
+        update_scenario_results(collision_data, pedestrian_collision): Update the scenario results based on a collision.
+        on_collision(event): Handle the collision event.
+        attach_collision_sensor(): Attach the collision sensor to the ego vehicle.
+    """
     def __init__(
         self,
         groups_config,
@@ -39,7 +99,9 @@ class TrolleyScenario:
             "other_collisions": [],
         }
         self.pedestrian_ages = []
-
+        self.gone_right = False
+        self.gone_left = False
+        self.steering = []
     def setup_variables(self, groups_config, client):
         self.groups_config = groups_config
         self.total_pedestrians = sum(
@@ -167,6 +229,7 @@ class TrolleyScenario:
       
 
         return spawn_location, group_list
+    
 
     def spawn_actors(self):
         for idx in range(self.num_groups):
@@ -197,24 +260,32 @@ class TrolleyScenario:
             return 0
         return (age - min_age) / (max_age - min_age)
 
-    # def calculate_individual_harm(self, collision_data):
-    #     harm_score = ETHICAL_KNOB * (
-    #         WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data["ego_speed"])
-    #         + WEIGHT_AGE * (1 - self.normalize_age(collision_data["pedestrian_age"]))
-    #         + (1 - ETHICAL_KNOB)
-    #         * (
-    #             WEIGHT_COLISSION_SPEED * normalize_velocity(collision_data["ego_speed"])
-    #             + WEIGHT_AGE
-    #             * sum(
-    #                 1 - self.normalize_age(passenger)
-    #                 for passenger in self.passengers["age"]
-    #             )
-    #         )
-    #         / CAR_SAFETY_FACTOR
-    #     )
+    def handle_keyboard_input(self, control):
+        keys = pygame.key.get_pressed()
 
-        # return harm_score
+        if keys[K_w]:
+            control.throttle = 1.0
+        else:
+            control.throttle = 0
 
+        if keys[K_s]:
+            control.brake = 1.0
+        else:
+            control.brake = 0
+
+        steer_increment = 0.1  # Adjust this value for smoother steering
+        if keys[K_a]:
+            control.steer = max(-1.0, control.steer - steer_increment)
+        elif keys[K_d]:
+            control.steer = min(1.0, control.steer + steer_increment)
+        else:
+            # Gradually reduce steering to 0 if no steering keys are pressed
+            if control.steer < 0:
+                control.steer = min(0, control.steer + steer_increment)
+            elif control.steer > 0:
+                control.steer = max(0, control.steer - steer_increment)
+
+        return control
     def update_scenario_results(
         self, collision_data, pedestrian_collision
     ):
@@ -269,14 +340,11 @@ class TrolleyScenario:
             self.update_scenario_results(
                 collision_data, pedestrian_collision
             )
-            # print(f"Calculated harm score for pedestrian {hit_id}: {harm_score}")
+
 
 
             
         else:
-            # print(f"hit_id: {hit_id}")
-            # print(f"actor_id_lists: {self.actor_id_lists}")
-            # print(f"obstacle_id: {self.obstacle.id}")
             """
             If the ego hits something other (!wall or obstacle!) than pedestrians there still punishment but less
             """
@@ -312,11 +380,17 @@ class TrolleyScenario:
 
     def apply_control(self, vehicle, steering_decision, braking_decision):
         neural_network_steering = 2 * steering_decision - 1  # y = 2x-1, [0,1] to [-1,1]
+        if neural_network_steering < 0:
+            self.gone_left = True
+        elif neural_network_steering > 0:
+            self.gone_right = True
+
         control = carla.VehicleControl(
             steer=neural_network_steering,
             throttle=1.0 - braking_decision,
             brake=braking_decision,
         )
+
         vehicle.apply_control(control)
 
     def give_ego_initial_speed(self, speed):
@@ -409,9 +483,14 @@ class TrolleyScenario:
 
         self.give_ego_initial_speed(MAX_SPEED)
         self.attach_collision_sensor()
+        pygame.init()
+        screen = pygame.display.set_mode((640, 480))
+        pygame.display.set_caption("Manual Control")
+        
 
+        M = MAX_PEDS
         ticks = 0
-
+        control = carla.VehicleControl()
         while ticks < 200:
             self.world.tick()
             ticks = ticks + 1
@@ -430,10 +509,10 @@ class TrolleyScenario:
                                 self.ego.get_transform().rotation.yaw,
                                 pedestrian.get_location(),
                             )
-                            input_vector.append(local_x)
-                            input_vector.append(local_y)
+                            input_vector.append(normalize_distance(local_x))
+                            input_vector.append(normalize_distance(local_y))
                             input_vector.append(
-                                self.pedestrian_attributes[pedestrian.id]["age"]
+                               normalize_input(self.pedestrian_attributes[pedestrian.id]["age"],self.results["min_age"],self.results["max_age"])
                             )
                             #print(f"input_vector length {len(input_vector)} after pedestrian {idx} of group {group}")
                             
@@ -445,25 +524,26 @@ class TrolleyScenario:
                             )
 
                         else:
-                            input_vector.append(-9999)
+                            input_vector.append(int(input_vector[-3]))
                             input_vector.append(
-                                -9999
+                                int(input_vector[-2])
                             )
                             input_vector.append(
-                                -9999
+                                200 #Terastia hlikia gia na min to dinei shmasia
                             )    
                 local_x, local_y = self.get_relative_position(self.ego.get_location(),
                                 self.ego.get_transform().rotation.yaw,
                                 self.obstacle.get_location())
-                input_vector.append(local_x)
-                input_vector.append(local_y)
+                input_vector.append(normalize_distance(local_x))
+                input_vector.append(normalize_distance(local_y))
                 #print(f"input_vector length {len(input_vector)} after obstacle")
-                input_vector.append(self.get_ego_abs_velocity())
-                #print(f"input_vector length {len(input_vector)} after speed")
+                velocity = self.get_ego_abs_velocity()
+                #print(f"input_vector length {len(input_vector)} after obstacle")
+                input_vector.append(normalize_velocity(velocity))
                 steering_decision, braking_decision = net.activate(
-                    input_vector
+                  input_vector
                 )
-
+                self.steering.append(2*steering_decision-1)
                 if len(self.collided_pedestrians) < 1:
                     self.apply_control(self.ego, steering_decision, braking_decision)
                 else:
@@ -471,9 +551,40 @@ class TrolleyScenario:
                     self.ego.apply_control(control)
                 if self.get_ego_abs_velocity() < 0.1:
                     break
+
             elif controlling_driver is not "neat":
+                if choice == "manual":
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            quit()
+
+                        control = self.handle_keyboard_input(control)
+                        print(control)
+
+
+
+                    
+                    
+            
+                    
+                    for group in self.group_actors:
+                        for idx in range(M):
+                            if idx < len(group):
+                                pedestrian = group[idx]
+                                self.react_to_approaching_car(
+                                    pedestrian,
+                                    self.ego.get_transform(),
+                                    self.ego.get_velocity(),
+                                )
+                    if self.get_ego_abs_velocity() < 0.1:
+                        break
+
+
+
+
                 
-                if choice in controls_mapping:
+                elif choice in controls_mapping:
                     control = controls_mapping[choice]
                 else:
                     print("Invalid choice selected")
@@ -499,7 +610,7 @@ class TrolleyScenario:
         self.results["max_age"] = max(self.pedestrian_ages)
    
         self.results["passengers"] =(self.passengers)
-
+        pygame.quit()
         self.destroy_all()
 
 

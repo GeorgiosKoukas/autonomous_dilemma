@@ -4,7 +4,7 @@ from genome_evaluator import eval_genomes
 
 def run(config_path):
     checkpoint_restorer = True
-    #checkpoint_restorer = None
+    checkpoint_restorer = True
     config = neat.config.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -12,26 +12,25 @@ def run(config_path):
         neat.DefaultStagnation,
         config_path,
     )
+    output = "winner_net.pkl"
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-399")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-734")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
         p.add_reporter(checkpoint)
        
-        try:
-            with open("winner_net.pkl", "wb") as output:
-                winner = p.run(eval_genomes, NUM_GENERATIONS)
-                node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
-                visualize.draw_net(config, winner, True, node_names=node_names)
-                visualize.plot_stats(stats, ylog=False, view=True)
-                visualize.plot_species(stats, view=True)
-                winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-                pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
-        except Exception as e: 
-            print(f"Error when pickling the winner: {e}")
+ 
+        winner = p.run(eval_genomes, NUM_GENERATIONS)
+        node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
+        visualize.draw_net(config, winner, True, node_names=node_names)
+        visualize.plot_stats(stats, ylog=False, view=True)
+        visualize.plot_species(stats, view=True)
+        winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+        pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
+
             
     else:
         p = neat.Population(config)
