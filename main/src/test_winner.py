@@ -31,7 +31,7 @@ def run_test_scenario(scenario_attributes, trivial_run, winner):
 
     scenario.run(winner, controlling_driver=trivial_run if trivial_run.startswith("neat") else "", choice=trivial_run)
     harm, normalized_pedestrian_harm, normalized_passenger_harm = score_calculator(scenario.results, scenario)
-    return harm, normalized_pedestrian_harm, normalized_passenger_harm
+    return harm, normalized_pedestrian_harm, normalized_passenger_harm, scenario.elapsed_time_for_user_reaction
 
 def plot_average_scores(scores, score_type):
     average_scores = {model: sum(score_list) / len(score_list) for model, score_list in scores.items()}
@@ -232,20 +232,31 @@ def run_scenarios(client, num_scenarios, winners, choices):
     scores = {choice: [] for choice in choices}
     scores_pedestrian_harm = {choice: [] for choice in choices}
     scores_passenger_harm = {choice: [] for choice in choices}
-
+    reaction_times = []
     for _ in range(num_scenarios):
         attributes = generate_scenario_attributes(client)
         scores_per_scenario = []
         for choice in choices:
-            winner = winners.get(choice, None)
-            harm, normalized_pedestrian_harm, normalized_passenger_harm = run_test_scenario( attributes, choice, winner)
-            score = 1 - harm
-            scores[choice].append(score)
-            scores_per_scenario.append(score)
-            score_pedestrian_harm = 1 - normalized_pedestrian_harm
-            scores_pedestrian_harm[choice].append(score_pedestrian_harm)
-            score_passenger_harm = 1 - normalized_passenger_harm
-            scores_passenger_harm[choice].append(score_passenger_harm)
+            if choice != "manual":
+                winner = winners.get(choice, None)
+                harm, normalized_pedestrian_harm, normalized_passenger_harm, _ = run_test_scenario( attributes, choice, winner)
+                score = 1 - harm
+                scores[choice].append(score)
+                scores_per_scenario.append(score)
+                score_pedestrian_harm = 1 - normalized_pedestrian_harm
+                scores_pedestrian_harm[choice].append(score_pedestrian_harm)
+                score_passenger_harm = 1 - normalized_passenger_harm
+                scores_passenger_harm[choice].append(score_passenger_harm)
+            else:
+                harm, normalized_pedestrian_harm, normalized_passenger_harm, reaction_time = run_test_scenario( attributes, choice, None)
+                score = 1 - harm
+                scores[choice].append(score)
+                scores_per_scenario.append(score)
+                score_pedestrian_harm = 1 - normalized_pedestrian_harm
+                scores_pedestrian_harm[choice].append(score_pedestrian_harm)
+                score_passenger_harm = 1 - normalized_passenger_harm
+                scores_passenger_harm[choice].append(score_passenger_harm)
+                reaction_times.append(reaction_time)
        
 
 
@@ -260,7 +271,7 @@ def run_scenarios(client, num_scenarios, winners, choices):
                 normalized_score = 0.5  # Handle division by zero if max_score equals min_score
             scores[run_type].append(normalized_score)
 
-    return scores, scores_pedestrian_harm, scores_passenger_harm
+    return scores, scores_pedestrian_harm, scores_passenger_harm, reaction_times
 
 def run_scenarios_user_input(client, num_scenarios, winners, choices):
     scores = {choice: [] for choice in choices}
@@ -303,7 +314,7 @@ if __name__ == "__main__":
     settings_setter(world)
 
     filepaths = [
-               "saved_genomes/genome_25664_fitness_9209.538459962874.pkl"
+               "saved_genomes/golden ones/genome_25664_fitness_9209.538459962874.pkl"
 
     ]
 
@@ -324,10 +335,17 @@ if __name__ == "__main__":
 
     winners = load_winner_nets(filepaths)
 
-    num_scenarios = 50
+    num_scenarios = 10
     choices = list(winners.keys()) + ["left", "right", "straight", "manual"] # Add or remove choices as needed
     choices = ["manual"]
-    overall_scores, pedestrian_scores, passenger_scores = run_scenarios(client, num_scenarios, winners, choices)
+    overall_scores, pedestrian_scores, passenger_scores, reaction_times = run_scenarios(client, num_scenarios, winners, choices)
+    plt.figure()
+    sns.distplot(reaction_times)
+    plt.title('Reaction Times of Manual Driver')
+    plt.xlabel('Reaction Time (s)')
+    plt.ylabel('Density')
+    plt.savefig('plots/reaction_times.png')
+    plt.show()
     plot_average_scores(overall_scores, None)
     plot_cumulative_scores(overall_scores, None)
     plot_score_distribution(overall_scores, None)

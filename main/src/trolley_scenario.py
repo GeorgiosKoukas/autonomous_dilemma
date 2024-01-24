@@ -2,6 +2,8 @@ from utils import *
 from typing import Dict
 import pygame
 from pygame.locals import K_w, K_a, K_s, K_d, KEYDOWN, KEYUP, K_ESCAPE, QUIT
+import time
+
 
 
 class TrolleyScenario:
@@ -102,6 +104,7 @@ class TrolleyScenario:
         self.gone_right = False
         self.gone_left = False
         self.steering = []
+        self.elapsed_time_for_user_reaction = 0
     def setup_variables(self, groups_config, client):
         self.groups_config = groups_config
         self.total_pedestrians = sum(
@@ -271,7 +274,7 @@ class TrolleyScenario:
         if keys[K_s]:
             control.brake = 1.0
         else:
-            control.brake = 0
+            control.brake = 0 # Depending on the experiment we might want to change this to 1.0
 
         steer_increment = 0.1  # Adjust this value for smoother steering
         if keys[K_a]:
@@ -491,6 +494,9 @@ class TrolleyScenario:
         M = MAX_PEDS
         ticks = 0
         control = carla.VehicleControl()
+
+        key_pressed = False
+        start_time_of_user_reaction = time.time()
         while ticks < 200:
             self.world.tick()
             ticks = ticks + 1
@@ -557,11 +563,15 @@ class TrolleyScenario:
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                             pygame.quit()
-                            quit()
+                            quit()   
+                        if event.type == pygame.KEYDOWN and key_pressed == False:
+                            key_pressed = True
+                            end_time_of_user_reaction = time.time()
+                            self.elapsed_time_for_user_reaction = end_time_of_user_reaction - start_time_of_user_reaction
 
                         control = self.handle_keyboard_input(control)
                         print(control)
-
+                        self.ego.apply_control(control)
 
 
                     
