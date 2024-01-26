@@ -1,0 +1,71 @@
+digraph {
+	node [fontsize=12 height=0.5 shape=circle width=0.5]
+	subgraph cluster_input {
+		color=lightblue
+		label="Input Layer"
+		-1 [fillcolor=lightgray shape=box style=filled]
+		-2 [fillcolor=lightgray shape=box style=filled]
+		-3 [fillcolor=lightgray shape=box style=filled]
+		-4 [fillcolor=lightgray shape=box style=filled]
+		-5 [fillcolor=lightgray shape=box style=filled]
+		-6 [fillcolor=lightgray shape=box style=filled]
+		-7 [fillcolor=lightgray shape=box style=filled]
+		-8 [fillcolor=lightgray shape=box style=filled]
+		-9 [fillcolor=lightgray shape=box style=filled]
+		-10 [fillcolor=lightgray shape=box style=filled]
+		-11 [fillcolor=lightgray shape=box style=filled]
+		-12 [fillcolor=lightgray shape=box style=filled]
+		-13 [fillcolor=lightgray shape=box style=filled]
+		-14 [fillcolor=lightgray shape=box style=filled]
+		-15 [fillcolor=lightgray shape=box style=filled]
+		-16 [fillcolor=lightgray shape=box style=filled]
+		-17 [fillcolor=lightgray shape=box style=filled]
+		-18 [fillcolor=lightgray shape=box style=filled]
+		-19 [fillcolor=lightgray shape=box style=filled]
+		-20 [fillcolor=lightgray shape=box style=filled]
+		-21 [fillcolor=lightgray shape=box style=filled]
+	}
+	subgraph cluster_output {
+		color=lightgreen
+		label="Output Layer"
+		0 [fillcolor=lightblue style=filled]
+		1 [fillcolor=lightblue style=filled]
+	}
+	subgraph cluster_hidden {
+		color=yellow
+		label="Hidden Layer"
+		29925 [fillcolor=white style=filled]
+		31334 [fillcolor=white style=filled]
+		29546 [fillcolor=white style=filled]
+		28683 [fillcolor=white style=filled]
+		26476 [fillcolor=white style=filled]
+		31981 [fillcolor=white style=filled]
+		30639 [fillcolor=white style=filled]
+		26768 [fillcolor=white style=filled]
+		31315 [fillcolor=white style=filled]
+		23260 [fillcolor=white style=filled]
+		29983 [fillcolor=white style=filled]
+	}
+	-12 -> 1 [color=red penwidth=0.15173706727559977 style=solid]
+	-19 -> 1 [color=red penwidth=0.3684150707367414 style=dotted]
+	-16 -> 23260 [color=red penwidth=0.14777263958336403 style=solid]
+	-14 -> 0 [color=red penwidth=1.4245827594751312 style=solid]
+	-20 -> 26476 [color=green penwidth=0.3318242505292598 style=dotted]
+	-13 -> 23260 [color=red penwidth=0.1010633527245739 style=solid]
+	-19 -> 29546 [color=green penwidth=0.4054857532131806 style=solid]
+	26768 -> 29925 [color=red penwidth=0.23848894744550275 style=solid]
+	29546 -> 29983 [color=red penwidth=0.2872871511177162 style=solid]
+	29983 -> 30639 [color=red penwidth=0.1286297169803482 style=solid]
+	30639 -> 1 [color=red penwidth=0.8233000312080879 style=solid]
+	29546 -> 28683 [color=red penwidth=0.411057815819457 style=solid]
+	-14 -> 31315 [color=green penwidth=0.41187395506868596 style=solid]
+	31315 -> 26476 [color=red penwidth=0.21166539221919628 style=solid]
+	0 -> 29925 [color=red penwidth=0.2076881699839436 style=solid]
+	-19 -> 31334 [color=red penwidth=0.11270676909747418 style=solid]
+	31334 -> 29546 [color=green penwidth=0.2866908552023816 style=solid]
+	29983 -> 28683 [color=red penwidth=0.46544515511512297 style=solid]
+	-3 -> 31315 [color=green penwidth=0.10374986875421846 style=solid]
+	-19 -> 31981 [color=green penwidth=0.28066336962692584 style=solid]
+	31981 -> 1 [color=red penwidth=0.4086881519307426 style=solid]
+	-9 -> 23260 [color=green penwidth=0.15983069779786163 style=solid]
+}

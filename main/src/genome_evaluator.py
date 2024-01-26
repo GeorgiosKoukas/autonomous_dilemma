@@ -4,29 +4,11 @@ from trolley_scenario import TrolleyScenario
 
 
 def eval_genomes(genomes, config):
-    """
-    Evaluate the fitness of each genome in a population.
-
-    Args:
-        genomes (list): List of tuples containing genome ID and genome object.
-        config (neat.Config): Configuration object for NEAT algorithm.
-
-    Returns:
-        None
-    """
     client = carla.Client("localhost", 2000)
     client.set_timeout(15)
     world = client.get_world()
     settings_setter(world)
-    
-    generation_scenarios = []
-    # Rest of the code...
-def eval_genomes(genomes, config):
-    client = carla.Client("localhost", 2000)
-    client.set_timeout(15)
-    world = client.get_world()
-    settings_setter(world)
-    
+
     generation_scenarios = []
     for scenario in range(NUM_MAX_EPISODES):
         groups_config = generate_groups_config(NUM_GROUPS)
@@ -51,32 +33,31 @@ def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         genome_fitness = []
         genome.fitness = 0
-        life = 0 
+        life = 0
         gone_right = False
         gone_left = False
         for attributes in range(NUM_EPISODES):
             scenario_attributes = generation_scenarios[attributes]
-            #net = neat.nn.RecurrentNetwork.create(genome, config)
+            # net = neat.nn.RecurrentNetwork.create(genome, config)
             net = neat.nn.FeedForwardNetwork.create(genome, config)
             # Generate the same scenario for each AV in the same generation
             scenario = TrolleyScenario(*scenario_attributes)
             scenario.run(net, "neat", "no")
             # Use the results to determine the loss
-            harm_score, _ , _ = score_calculator(scenario.results, scenario)
-            harm_score = MAGNYFYING_FITNESS*harm_score
+            harm_score, _, _ = score_calculator(scenario.results, scenario)
+            harm_score = MAGNYFYING_FITNESS * harm_score
             genome_fitness.append(-harm_score)
             turn = sum(scenario.steering)
 
-                
             if turn > 0 and scenario.steering[0] > 0 and scenario.steering[-1] > 0:
                 gone_right = True
-                print('right')
+                print("right")
             if turn < 0 and scenario.steering[0] < 0 and scenario.steering[-1] < 0:
                 gone_left = True
-                print('left')
+                print("left")
             if len(scenario.collided_pedestrians) == 0:
                 genome_fitness.append(100)
-    #if sum(genome_fitness)>0:
+        # if sum(genome_fitness)>0:
         for attributes in range(NUM_EPISODES, NUM_MAX_EPISODES):
             scenario_attributes = generation_scenarios[attributes]
 
@@ -85,32 +66,33 @@ def eval_genomes(genomes, config):
             scenario = TrolleyScenario(*scenario_attributes)
             scenario.run(net, "neat", "no")
             # Use the results to determine the loss
-            
-            harm_score, _ , _ = score_calculator(scenario.results, scenario)
-            harm_score = MAGNYFYING_FITNESS*harm_score
+
+            harm_score, _, _ = score_calculator(scenario.results, scenario)
+            harm_score = MAGNYFYING_FITNESS * harm_score
             turn = sum(scenario.steering)
-            if turn >0:
+            if turn > 0:
                 gone_right = True
-                print('right')
+                print("right")
             if turn < 0:
                 gone_left = True
-                print('left')
+                print("left")
             if attributes > 1:
                 if not gone_left or not gone_right:
                     genome_fitness.append(-3000)
-                    break 
+                    break
             if attributes % 10 == 0:
                 life += 1
-                print(f'life gained, reached scenario {attributes} with life {life}')
-                
+                print(f"life gained, reached scenario {attributes} with life {life}")
 
-            if abs(harm_score)>0:
+            if abs(harm_score) > 0:
                 genome_fitness.append(-harm_score)
                 if life > 0:
-                    print(f'life lost, reached scenario {attributes} with life {life-1}')
-                life = life - 1 
-                
-                if life < 0 and attributes >1:
+                    print(
+                        f"life lost, reached scenario {attributes} with life {life-1}"
+                    )
+                life = life - 1
+
+                if life < 0 and attributes > 1:
                     break
             else:
                 genome_fitness.append(100)
@@ -124,10 +106,11 @@ def eval_genomes(genomes, config):
                 os.makedirs(save_dir)
 
             # Construct a file name based on the genome ID and fitness
-            filename = os.path.join(save_dir, f"genome_{genome_id}_fitness_{genome.fitness}.pkl")
+            filename = os.path.join(
+                save_dir, f"genome_{genome_id}_fitness_{genome.fitness}.pkl"
+            )
 
             # Dump the genome using pickle
-            with open(filename, 'wb') as f:
+            with open(filename, "wb") as f:
                 pickle.dump(genome, f)
         print(f"Genome {genome_id} fitness: {genome.fitness}")
-    

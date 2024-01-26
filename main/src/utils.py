@@ -19,7 +19,7 @@ NUM_EPISODES = 1
 NUM_MAX_EPISODES = 100
 
 NUM_GENERATIONS = 300
-RENDERING = True
+RENDERING = False
 
 NUM_PASSENGERS = 2
 ETHICAL_KNOB = 0.8
@@ -59,27 +59,46 @@ def score_calculator(results, scenario):
 
     for pedestrian_hit in results["pedestrian_collisions"]:
         pedestrians_harm += 1 - (
-            normalize_input(pedestrian_hit["pedestrian_age"], results["min_age"], results["max_age"])
-            ) * normalize_velocity(
-            pedestrian_hit["speed"]
-        )
+            normalize_input(
+                pedestrian_hit["pedestrian_age"], results["min_age"], results["max_age"]
+            )
+        ) * normalize_velocity(pedestrian_hit["speed"])
         for passenger_age in results["passengers"]["age"]:
-            passengers_harm += 1 - (normalize_input(passenger_age, min(results["passengers"]["age"]), max(results["passengers"]["age"]))
-         ) * normalize_velocity(pedestrian_hit["speed"])
+            passengers_harm += 1 - (
+                normalize_input(
+                    passenger_age,
+                    min(results["passengers"]["age"]),
+                    max(results["passengers"]["age"]),
+                )
+            ) * normalize_velocity(pedestrian_hit["speed"])
     for obstacle_hit in results["other_collisions"]:
         for passenger_age in results["passengers"]["age"]:
-            passengers_harm += 1 - (normalize_input(passenger_age, min(results["passengers"]["age"]), max(results["passengers"]["age"]))
-         ) * normalize_velocity(obstacle_hit["speed"])
-    #HAVE TO TAKE INTO ACCOUNT COLISSIONS WITH OBSTACLES OR WALLS
+            passengers_harm += 1 - (
+                normalize_input(
+                    passenger_age,
+                    min(results["passengers"]["age"]),
+                    max(results["passengers"]["age"]),
+                )
+            ) * normalize_velocity(obstacle_hit["speed"])
+    # HAVE TO TAKE INTO ACCOUNT COLISSIONS WITH OBSTACLES OR WALLS
     normalized_pedestrians_harm = pedestrians_harm / scenario.total_pedestrians
     if (len(results["pedestrian_collisions"]) + len(results["other_collisions"])) == 0:
         normalized_passengers_harm = 0
     else:
-        normalized_passengers_harm = passengers_harm / len(results["passengers"]["age"]) / (len(results["pedestrian_collisions"]) + len(results["other_collisions"])) / CAR_SAFETY_FACTOR
+        normalized_passengers_harm = (
+            passengers_harm
+            / len(results["passengers"]["age"])
+            / (len(results["pedestrian_collisions"]) + len(results["other_collisions"]))
+            / CAR_SAFETY_FACTOR
+        )
     # Apply ETHICAL_KNOB
-    harm = (ETHICAL_KNOB * normalized_pedestrians_harm + (1 - ETHICAL_KNOB) * normalized_passengers_harm)
+    harm = (
+        ETHICAL_KNOB * normalized_pedestrians_harm
+        + (1 - ETHICAL_KNOB) * normalized_passengers_harm
+    )
 
     return harm, normalized_pedestrians_harm, normalized_passengers_harm
+
 
 def save_best_genome(genomes, generation):
     """
@@ -93,14 +112,15 @@ def save_best_genome(genomes, generation):
     None
     """
     # Ensure the 'winners' directory exists
-    winners_dir = os.path.join(os.path.dirname(__file__), 'winners')
+    winners_dir = os.path.join(os.path.dirname(__file__), "winners")
     if not os.path.exists(winners_dir):
         os.makedirs(winners_dir)
 
     best_genome = max(genomes, key=lambda g: g[1].fitness)
     with open(os.path.join(winners_dir, f"winner_gen_{generation}.pkl"), "wb") as f:
         pickle.dump(best_genome, f, pickle.HIGHEST_PROTOCOL)
-        
+
+
 def normalize_input(value, min_val, max_val):
     """
     Normalize the input value between the minimum and maximum values.
@@ -114,8 +134,10 @@ def normalize_input(value, min_val, max_val):
     float: The normalized value.
     """
     if max_val == min_val:
-        return 0.0   
+        return 0.0
     return (value - min_val) / (max_val - min_val)
+
+
 def settings_setter(world):
     """
     Sets the settings for the world.
@@ -134,8 +156,10 @@ def settings_setter(world):
         "sun_altitude_angle": 90.0,
     }
     settings.no_rendering_mode = not RENDERING
-    settings.fixed_delta_seconds = 0.05 
+    settings.fixed_delta_seconds = 0.05
     world.apply_settings(settings)
+
+
 def generate_node_names(max_peds, num_groups):
     """
     Generate node names for pedestrian groups and ego vehicle velocity.
@@ -183,7 +207,7 @@ def generate_groups_config(NUM_GROUPS):
     groups = []
     for _ in range(NUM_GROUPS):
         group_config = {
-            "number": MAX_PEDS, #random.randint(MIN_PEDS, MAX_PEDS),
+            "number": MAX_PEDS,  # random.randint(MIN_PEDS, MAX_PEDS),
             "rotation": carla.Rotation(pitch=0.462902, yaw=-84.546936, roll=-0.001007),
         }
         groups.append(group_config)
@@ -193,6 +217,7 @@ def generate_groups_config(NUM_GROUPS):
 
 
 import math
+
 
 def calculate_collision_angle(ego_vehicle, other_actor):
     """
@@ -219,7 +244,7 @@ def calculate_collision_angle(ego_vehicle, other_actor):
     return math.degrees(math.acos(min(max(cos_angle, -1.0), 1.0)))
 
 
-def set_random_offsets(direction = None):
+def set_random_offsets(direction=None):
     """
     Generates random offsets for positioning groups of objects.
 
@@ -232,20 +257,19 @@ def set_random_offsets(direction = None):
     offset_group_0 = carla.Vector3D(
         0, random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y), 0
     )  # The first group is always in the middle
-    if direction == 'right':
+    if direction == "right":
         offset_other_groups = carla.Vector3D(
             random.uniform(MIN_OFFSET_X, 0),
             random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y),
             0,
         )
-    elif direction == 'left':
-
+    elif direction == "left":
         offset_other_groups = carla.Vector3D(
             random.uniform(0, MAX_OFFSET_X),
             random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y),
             0,
         )
-    else :
+    else:
         offset_other_groups = carla.Vector3D(
             random.uniform(MIN_OFFSET_X, MAX_OFFSET_X),
             random.uniform(MIN_OFFSET_Y, MAX_OFFSET_Y),
@@ -317,10 +341,10 @@ def generate_scenario_attributes(client):
 def normalize_distance(distance):
     """
     Normalize the given distance using the minimum and maximum distance values.
-    
+
     Args:
         distance (float): The distance to be normalized.
-    
+
     Returns:
         float: The normalized distance.
     """
@@ -410,13 +434,13 @@ def control_live_feed(ego):
             steering = control.steer
             throttle = control.throttle
 
-            axs[0].cla() 
+            axs[0].cla()
             axs[0].bar(["Throttle"], [throttle])
-            axs[0].set_ylim(0, 1)  
+            axs[0].set_ylim(0, 1)
 
             axs[1].cla()
             axs[1].bar(["Brake"], [brake])
-            axs[1].set_ylim(0, 1) 
+            axs[1].set_ylim(0, 1)
 
             axs[2].cla()
             axs[2].bar(["Steering"], [steering])

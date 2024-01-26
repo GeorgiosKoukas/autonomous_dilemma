@@ -21,8 +21,7 @@ def run(config_path):
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
         p.add_reporter(checkpoint)
-       
- 
+
         winner = p.run(eval_genomes, NUM_GENERATIONS)
         node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
         visualize.draw_net(config, winner, True, node_names=node_names)
@@ -31,7 +30,6 @@ def run(config_path):
         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
         pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
 
-            
     else:
         p = neat.Population(config)
         p.add_reporter(neat.StdOutReporter(True))
@@ -40,7 +38,7 @@ def run(config_path):
 
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
         p.add_reporter(checkpoint)
-      
+
         winner = p.run(eval_genomes, NUM_GENERATIONS)
         node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
         visualize.draw_net(config, winner, True, node_names=node_names)
@@ -48,8 +46,6 @@ def run(config_path):
         visualize.plot_species(stats, view=True)
         winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
         pickle.dump(winner_net, output, pickle.HIGHEST_PROTOCOL)
-
-    
 
 
 if __name__ == "__main__":
@@ -60,8 +56,7 @@ if __name__ == "__main__":
     config = ConfigObj(config_path, write_empty_values=True)
     num_inputs = NUM_GROUPS * MAX_PEDS * 3 + 2 + 1
     config["DefaultGenome"]["num_inputs"] = num_inputs
-    config["DefaultGenome"]["num_hidden"] = int(0.8*num_inputs)
-    config.write()# node response options
-
+    config["DefaultGenome"]["num_hidden"] = int(0.8 * num_inputs)
+    config.write()  # node response options
 
     run(config_path)
