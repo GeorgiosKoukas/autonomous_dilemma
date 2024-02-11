@@ -34,8 +34,6 @@ def eval_genomes(genomes, config):
         genome_fitness = []
         genome.fitness = 0
         life = 0
-        gone_right = False
-        gone_left = False
         for attributes in range(NUM_EPISODES):
             scenario_attributes = generation_scenarios[attributes]
             # net = neat.nn.RecurrentNetwork.create(genome, config)
@@ -47,14 +45,6 @@ def eval_genomes(genomes, config):
             harm_score, _, _ = score_calculator(scenario.results, scenario)
             harm_score = MAGNYFYING_FITNESS * harm_score
             genome_fitness.append(-harm_score)
-            turn = sum(scenario.steering)
-
-            if turn > 0 and scenario.steering[0] > 0 and scenario.steering[-1] > 0:
-                gone_right = True
-                print("right")
-            if turn < 0 and scenario.steering[0] < 0 and scenario.steering[-1] < 0:
-                gone_left = True
-                print("left")
             if len(scenario.collided_pedestrians) == 0:
                 genome_fitness.append(100)
         for attributes in range(NUM_EPISODES, NUM_MAX_EPISODES):
@@ -68,17 +58,7 @@ def eval_genomes(genomes, config):
 
             harm_score, _, _ = score_calculator(scenario.results, scenario)
             harm_score = MAGNYFYING_FITNESS * harm_score
-            turn = sum(scenario.steering)
-            if turn > 0:
-                gone_right = True
-                print("right")
-            if turn < 0:
-                gone_left = True
-                print("left")
-            if attributes > 1:
-                if not gone_left or not gone_right:
-                    genome_fitness.append(-3000)
-                    break
+
             if attributes % 10 == 0:
                 life += 1
                 print(f"life gained, reached scenario {attributes} with life {life}")
@@ -98,7 +78,7 @@ def eval_genomes(genomes, config):
 
         genome.fitness = sum(genome_fitness)
         del scenario
-        if genome.fitness > 2500:
+        if genome.fitness > 4000:
             # Specify a directory to save the genomes
             save_dir = "saved_genomes"
             if not os.path.exists(save_dir):

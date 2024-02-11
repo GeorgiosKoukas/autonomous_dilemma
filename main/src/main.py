@@ -1,10 +1,10 @@
 from utils import *
-from genome_evaluator import eval_genomes
+from genome_evaluator_first_version import eval_genomes
 
 
 def run(config_path):
     checkpoint_restorer = True
-    checkpoint_restorer = True
+    #checkpoint_restorer = False
     config = neat.config.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
@@ -16,7 +16,7 @@ def run(config_path):
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-734")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-958")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)

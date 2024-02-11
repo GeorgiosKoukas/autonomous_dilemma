@@ -138,14 +138,13 @@ class TrolleyScenario:
         self.spectator.set_transform(location)
 
     def adjust_passenger_ages_if_identical(self):
-        if not self.passengers["age"]:  # Check if the list is not empty
+        if not self.passengers["age"]:  
             return
 
         min_age = min(self.passengers["age"])
         max_age = max(self.passengers["age"])
 
         if min_age == max_age:
-            # Find the index of a passenger with max_age and add 0.5 to their age
             for i, age in enumerate(self.passengers["age"]):
                 if age == max_age:
                     self.passengers["age"][i] += 0.5
@@ -157,20 +156,19 @@ class TrolleyScenario:
 
             ego_transform = self.ego.get_transform()
 
-            # Calculating the backward vector relative to ego
             forward_vector = ego_transform.get_forward_vector()
             backward_vector = carla.Vector3D(
                 -1 * forward_vector.x, -1 * forward_vector.y, 0
             )  # Reverse direction
 
-            # Calculating the relative position of the spectator
+
             relative_location = carla.Location(
                 x=ego_transform.location.x + backward_vector.x * 10,  # 10 meters behind
                 y=ego_transform.location.y + backward_vector.y * 10,
                 z=ego_transform.location.z + 5,  # 5 meters above
             )
 
-            # Set the spectator's transform
+
             spectator_transform = carla.Transform(
                 relative_location,
                 carla.Rotation(pitch=-15, yaw=ego_transform.rotation.yaw, roll=0),
@@ -346,10 +344,7 @@ class TrolleyScenario:
             """
             If the ego hits something other (!wall or obstacle!) than pedestrians there still punishment but less
             """
-            # self.collided_pedestrians.add(hit_id)
             collision_data = {
-                #'timestamp': event.timestamp,
-                #'location': event.transform.location,
                 "ego_speed": (
                     self.ego.get_velocity().x ** 2
                     + self.ego.get_velocity().y ** 2
@@ -433,14 +428,11 @@ class TrolleyScenario:
                 self.reacted_pedestrians[pedestrian.id] = True
 
     def get_relative_position(self, car_position, car_yaw, pedestrian_position):
-        # Calculate relative position
         rel_x = pedestrian_position.x - car_position.x
         rel_y = pedestrian_position.y - car_position.y
 
-        # Convert car yaw angle to radians
         car_yaw_rad = math.radians(car_yaw)
 
-        # Rotate the relative position to car's local coordinate system
         local_x = rel_x * math.cos(-car_yaw_rad) - rel_y * math.sin(-car_yaw_rad)
         local_y = rel_x * math.sin(-car_yaw_rad) + rel_y * math.cos(-car_yaw_rad)
 
@@ -475,23 +467,22 @@ class TrolleyScenario:
 
         thread = threading.Thread(target=self.move_spectator_with_ego)
         thread.start()
-
+        key_pressed = False
         self.give_ego_initial_speed(MAX_SPEED)
         self.attach_collision_sensor()
-        pygame.init()
-        screen = pygame.display.set_mode((640, 480))
-        pygame.display.set_caption("Manual Control")
+        # pygame.init()
+        # screen = pygame.display.set_mode((4, 4))
+        # pygame.display.set_caption("Manual Control")
 
         M = MAX_PEDS
         ticks = 0
         control = carla.VehicleControl()
 
-        key_pressed = False
+        
         start_time_of_user_reaction = time.time()
         while ticks < 200:
             self.world.tick()
             ticks = ticks + 1
-            # Get the NEAT decisions
 
             if controlling_driver.startswith("neat"):
                 M = MAX_PEDS
@@ -536,9 +527,7 @@ class TrolleyScenario:
                 )
                 input_vector.append(normalize_distance(local_x))
                 input_vector.append(normalize_distance(local_y))
-                # print(f"input_vector length {len(input_vector)} after obstacle")
                 velocity = self.get_ego_abs_velocity()
-                # print(f"input_vector length {len(input_vector)} after obstacle")
                 input_vector.append(normalize_velocity(velocity))
                 steering_decision, braking_decision = net.activate(input_vector)
                 self.steering.append(2 * steering_decision - 1)
@@ -557,6 +546,7 @@ class TrolleyScenario:
                             pygame.quit()
                             quit()
                         if event.type == pygame.KEYDOWN and key_pressed == False:
+
                             key_pressed = True
                             end_time_of_user_reaction = time.time()
                             self.elapsed_time_for_user_reaction = (
@@ -603,9 +593,13 @@ class TrolleyScenario:
                     break
         self.terminate_thread = True
         thread.join()
+
+        if key_pressed == False and choice == "manual":
+            print("No reaction")
+            self.elapsed_time_for_user_reaction = 10
         self.results["min_age"] = min(self.pedestrian_ages)
         self.results["max_age"] = max(self.pedestrian_ages)
 
         self.results["passengers"] = self.passengers
-        pygame.quit()
+        #pygame.quit()
         self.destroy_all()

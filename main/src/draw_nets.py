@@ -10,25 +10,9 @@ config = neat.config.Config(
     config_path,
 )
 node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
-filepath = "saved_genomes/golden ones/genome_25664_fitness_9209.538459962874.pkl"
+filepath = "saved_genomes/genome_9411_fitness_9029.82748334049.pkl"
 with open(filepath, "rb") as input_file:
         winner_net = pickle.load(input_file)
-        
-
-            
+                    
 visualize.draw_net(config, winner_net, True)
 
-
-   
-
-
-
-
-
-config = ConfigObj(config_path, write_empty_values=True)
-num_inputs = NUM_GROUPS * MAX_PEDS * 3 + 2 + 1
-config["DefaultGenome"]["num_inputs"] = num_inputs
-config["DefaultGenome"]["num_hidden"] = int(0.8 * num_inputs)
-config.write()  # node response options
-
-run(config_path)

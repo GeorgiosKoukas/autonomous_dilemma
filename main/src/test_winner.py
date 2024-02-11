@@ -61,8 +61,9 @@ def plot_steering_traces(scenario_steering_data):
     plt.xlabel("Ticks")
     plt.ylabel("Steering Angle")
     plt.title("Steering Traces for All Scenarios")
-    plt.legend()
-    plt.show()
+
+    plt.savefig("plots/steering_traces.png")
+    plt.close()
 
 
 def plot_tree_map(turns_per_scenario):
@@ -84,7 +85,7 @@ def plot_tree_map(turns_per_scenario):
     squarify.plot(sizes=sizes, label=labels, color=colors, alpha=0.7)
     plt.title("Treemap of Decisions Made by a Specific Model")
     plt.axis("off")
-    plt.show()
+
 
 
 def plot_average_scores(scores, score_type):
@@ -93,7 +94,6 @@ def plot_average_scores(scores, score_type):
     }
 
     # Setting a color palette
-    sns.set_palette("pastel")
 
     plt.figure(figsize=(10, 6))
     ax = sns.barplot(x=list(average_scores.keys()), y=list(average_scores.values()))
@@ -109,25 +109,16 @@ def plot_average_scores(scores, score_type):
             textcoords="offset points",
         )
 
-    # Setting titles and labels
-    if score_type == "pedestrian_harm":
-        plt.title("Pedestrian Harm - Average Scores of Models")
-        plt.ylabel("Average Score")
-    elif score_type == "passenger_harm":
-        plt.title("Passenger Harm - Average Scores of Models")
-        plt.ylabel("Average Score")
-    else:
-        score_type = "overall_scores(with Ethical Knob)"
-        plt.title("Average Scores of Models")
-        plt.ylabel("Average Score")
+
+    plt.title(f"{score_type} - Average Scores of Models")
+    plt.ylabel("Average Score")
 
     plt.xlabel("Model")
     plt.xticks(rotation=45)  # Rotating model names for better visibility
     plt.tight_layout()  # Adjust layout
-
     # Save plot with a higher resolution
     plt.savefig(f"plots/{score_type}/average_scores.png", dpi=300)
-    plt.show()
+    plt.close()
 
 
 def plot_cumulative_scores(scores, score_type):
@@ -141,57 +132,24 @@ def plot_cumulative_scores(scores, score_type):
     Returns:
     None
     """
-    if score_type == "pedestrian_harm":
-        plt.figure(figsize=(12, 6))
-        for model, score_list in scores.items():
-            cumulative_scores = [
-                sum(score_list[: i + 1]) for i in range(len(score_list))
-            ]
-            sns.lineplot(
-                x=range(1, len(score_list) + 1),
-                y=cumulative_scores,
-                label=f"{model.capitalize()} Model",
-            )
-        plt.title("Pedestrian Harm - Cumulative Scores of Models")
-        plt.xlabel("Scenario Number")
-        plt.ylabel("Cumulative Score")
-        plt.legend()
-        plt.savefig("plots/pedestrian_harm_scores/cumulative_scores.png")
-        plt.show()
-    elif score_type == "passenger_harm":
-        plt.figure(figsize=(12, 6))
-        for model, score_list in scores.items():
-            cumulative_scores = [
-                sum(score_list[: i + 1]) for i in range(len(score_list))
-            ]
-            sns.lineplot(
-                x=range(1, len(score_list) + 1),
-                y=cumulative_scores,
-                label=f"{model.capitalize()} Model",
-            )
-        plt.title("Passenger Harm - Cumulative Scores of Models")
-        plt.xlabel("Scenario Number")
-        plt.ylabel("Cumulative Score")
-        plt.legend()
-        plt.savefig("plots/passengers_harm_scores/cumulative_scores.png")
-        plt.show()
-    else:
-        plt.figure(figsize=(12, 6))
-        for model, score_list in scores.items():
-            cumulative_scores = [
-                sum(score_list[: i + 1]) for i in range(len(score_list))
-            ]
-            sns.lineplot(
-                x=range(1, len(score_list) + 1),
-                y=cumulative_scores,
-                label=f"{model.capitalize()} Model",
-            )
-        plt.title("Cumulative Scores of Models")
-        plt.xlabel("Scenario Number")
-        plt.ylabel("Cumulative Score")
-        plt.legend()
-        plt.savefig("plots/overall_scores(with Ethical Knob)/cumulative_scores.png")
-        plt.show()
+
+    plt.figure(figsize=(12, 6))
+    for model, score_list in scores.items():
+        cumulative_scores = [
+            sum(score_list[: i + 1]) for i in range(len(score_list))
+        ]
+        sns.lineplot(
+            x=range(1, len(score_list) + 1),
+            y=cumulative_scores,
+            label=f"{model.capitalize()} Model",
+        )
+    plt.title(f"{score_type} - Cumulative Scores of Models")
+    plt.xlabel("Scenario Number")
+    plt.ylabel("Cumulative Score")
+    plt.legend()
+    plt.savefig(f"plots/{score_type}/cumulative_scoes.png", dpi=300)
+    plt.close()
+    
 
 
 def plot_score_distribution(scores, score_type):
@@ -199,142 +157,102 @@ def plot_score_distribution(scores, score_type):
         (model, score) for model, score_list in scores.items() for score in score_list
     ]
     df = pd.DataFrame(flattened_scores, columns=["Model", "Score"])
-
-    if score_type == "pedestrian_harm":
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(x="Model", y="Score", data=df)
-        plt.title("Pedestrian Harm - Score Distribution of Models")
-        plt.xlabel("Model")
-        plt.ylabel("Score")
-        plt.savefig("plots/pedestrian_harm_scores/score_distribution.png")
-        plt.show()
-    elif score_type == "passenger_harm":
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(x="Model", y="Score", data=df)
-        plt.title("Passenger Harm - Score Distribution of Models")
-        plt.xlabel("Model")
-        plt.ylabel("Score")
-        plt.savefig("plots/passengers_harm_scores/score_distribution.png")
-        plt.show()
-    else:
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(x="Model", y="Score", data=df)
-        plt.title("Score Distribution of Models")
-        plt.xlabel("Model")
-        plt.ylabel("Score")
-        plt.savefig("plots/overall_scores(with Ethical Knob)/score_distribution.png")
-        plt.show()
-
+    cmap = sns.color_palette("mako", as_cmap=True)
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x="Model", y="Score", data=df, cmap=cmap)
+    plt.title(f"{score_type} - Score Distribution of Models")
+    plt.xlabel("Model")
+    plt.ylabel("Score")
+    plt.savefig(f"plots/{score_type}/distribution.png", dpi=300)
+    plt.close()
 
 def plot_heatmap(scores, score_type):
     score_matrix = pd.DataFrame(scores)
-    if score_type == "pedestrian_harm":
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(score_matrix, annot=True, fmt=".2f", cmap="viridis")
-        plt.title("Pedestrian Harm - Scenario-wise Scores of Models")
-        plt.xlabel("Model")
-        plt.ylabel("Scenario Number")
-        plt.savefig("plots/pedestrian_harm_scores/heatmap.png")
-        plt.show()
-    elif score_type == "passenger_harm":
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(score_matrix, annot=True, fmt=".2f", cmap="viridis")
-        plt.title("Passenger Harm - Scenario-wise Scores of Models")
-        plt.xlabel("Model")
-        plt.ylabel("Scenario Number")
-        plt.savefig("plots/passengers_harm_scores/heatmap.png")
-        plt.show()
-    else:
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(score_matrix, annot=True, fmt=".2f", cmap="viridis")
-        plt.title("Scenario-wise Scores of Models")
-        plt.xlabel("Model")
-        plt.ylabel("Scenario Number")
-        plt.savefig("plots/overall_scores(with Ethical Knob)/heatmap.png")
-        plt.show()
-
+    cmap = sns.color_palette("mako", as_cmap=True)
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(score_matrix, annot=True, fmt=".2f", cmap = cmap)
+    plt.title(f"{score_type} - Scenario-wise Scores of Models")
+    plt.xlabel("Model")
+    plt.ylabel("Scenario Number")
+    plt.savefig(f"plots/{score_type}/heatmap.png", dpi=300)
+    plt.close()
 
 def plot_scores(scores, score_type):
-    sns.set(style="whitegrid")
-    if score_type == "pedestrian_harm":
-        plt.figure(figsize=(12, 6))
-        for model, score_list in scores.items():
-            sns.lineplot(
-                x=range(1, len(score_list) + 1),
-                y=score_list,
-                label=f"{model.capitalize()} Model",
-            )
+    plt.figure(figsize=(12, 6))
+    for model, score_list in scores.items():
+        sns.lineplot(
+            x=range(1, len(score_list) + 1),
+            y=score_list,
+            label=f"{model.capitalize()} Model",
+        )
 
-        plt.title("Pedestrian Harm - Model Score Comparison")
-        plt.xlabel("Scenario Number")
-        plt.ylabel("Score")
-        plt.legend()
-        plt.savefig("plots/pedestrian_harm_scores/scores.png")
-        plt.show()
-    elif score_type == "passenger_harm":
-        plt.figure(figsize=(12, 6))
-        for model, score_list in scores.items():
-            sns.lineplot(
-                x=range(1, len(score_list) + 1),
-                y=score_list,
-                label=f"{model.capitalize()} Model",
-            )
-
-        plt.title("Passenger Harm - Model Score Comparison")
-        plt.xlabel("Scenario Number")
-        plt.ylabel("Score")
-        plt.legend()
-        plt.savefig("plots/passengers_harm_scores/scores.png")
-        plt.show()
-    else:
-        plt.figure(figsize=(12, 6))
-
-        for model, score_list in scores.items():
-            sns.lineplot(
-                x=range(1, len(score_list) + 1),
-                y=score_list,
-                label=f"{model.capitalize()} Model",
-            )
-
-        plt.title("Model Score Comparison")
-        plt.xlabel("Scenario Number")
-        plt.ylabel("Score")
-        plt.legend()
-        plt.savefig("plots/overall_scores(with Ethical Knob)/scores.png")
-        plt.show()
-
+    plt.title(f"{score_type} - Model Score Comparison")
+    plt.xlabel("Scenario Number")
+    plt.ylabel("Score")
+    plt.legend()
+    plt.savefig(f"plots/{score_type}/scores.png", dpi=300)
+    plt.close()
 
 def plot_violin_scores(scores, score_type):
     flattened_scores = [
         (model, score) for model, score_list in scores.items() for score in score_list
     ]
     df = pd.DataFrame(flattened_scores, columns=["Model", "Score"])
-    if score_type == "pedestrian_harm":
-        plt.figure(figsize=(10, 6))
-        sns.violinplot(x="Model", y="Score", data=df)
-        plt.title("Pedestrian Harm - Score Distribution of Models Using Violin Plot")
-        plt.xlabel("Model")
-        plt.ylabel("Score")
-        plt.savefig("plots/pedestrian_harm_scores/violin_scores.png")
-        plt.show()
-    elif score_type == "passenger_harm":
-        plt.figure(figsize=(10, 6))
-        sns.violinplot(x="Model", y="Score", data=df)
-        plt.title("Passenger Harm - Score Distribution of Models Using Violin Plot")
-        plt.xlabel("Model")
-        plt.ylabel("Score")
-        plt.savefig("plots/passengers_harm_scores/violin_scores.png")
-        plt.show()
-    else:
-        plt.figure(figsize=(10, 6))
-        sns.violinplot(x="Model", y="Score", data=df)
-        plt.title("Score Distribution of Models Using Violin Plot")
-        plt.xlabel("Model")
-        plt.ylabel("Score")
-        plt.savefig("plots/overall_scores(with Ethical Knob)/violin_scores.png")
-        plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.violinplot(x="Model", y="Score", data=df, inner="quart")
+    plt.title(f"{score_type} - Distribution of Models Using Violin Plot")
+    plt.xlabel("Model")
+    plt.ylabel("Score")
+    plt.savefig(f"plots/{score_type}/violin.png", dpi=300)
+    plt.close()
+def plot_reaction_times(reaction_times):
+    plt.figure(figsize=(10, 6))
+    sns.distplot(reaction_times, hist=True, kde=False, bins=10, color='blue', hist_kws={'edgecolor':'black'}, kde_kws={'linewidth': 4})
+    plt.title('Reaction Times of Manual Driver')
+    plt.xlabel('Reaction Time (s)')
+    plt.ylabel('Density')
+    plt.savefig('plots/reaction_times.png')
+    print(reaction_times)
+    plt.show()
+    plt.close()
+def normalize_scores_at_each_index(scores):
+    """
+    Normalizes the scores such that at each index the choice with the highest score becomes 1 and the lowest becomes 0.
 
+    Parameters:
+    scores (iterable of lists): The score arrays for different choices.
 
+    Returns:
+    list of lists: Normalized score arrays.
+    """
+    
+    scores = list(scores)  # Ensure scores is a list of lists
+    num_choices = len(scores)
+
+    # Check if scores is empty or contains empty lists
+    if not scores or any(len(choice_scores) == 0 for choice_scores in scores):
+        raise ValueError("Scores should not be empty and should not contain empty lists.")
+
+    # Determine the number of indices (assumes all score lists are of the same length)
+    num_indices = len(scores[0])
+
+    # Initialize the list to hold the normalized scores for each choice
+    normalized_score_arrays = [[] for _ in range(num_choices)]
+
+    # Normalize the scores at each index
+    for index in range(num_indices):
+        # Get all scores at this index across different choices
+        index_scores = [choice_scores[index] for choice_scores in scores]
+
+        max_score = max(index_scores)
+        min_score = min(index_scores)
+
+        # Normalize the score for each choice at this index
+        for choice_index, score in enumerate(index_scores):
+            normalized_score = 0 if max_score == min_score else (score - min_score) / (max_score - min_score)
+            normalized_score_arrays[choice_index].append(normalized_score)
+
+    return normalized_score_arrays
 def run_scenarios(client, num_scenarios, winners, choices):
     scores = {choice: [] for choice in choices}
     scores_pedestrian_harm = {choice: [] for choice in choices}
@@ -376,10 +294,10 @@ def run_scenarios(client, num_scenarios, winners, choices):
                     normalized_passenger_harm,
                     reaction_time,
                     turn,
+                    all_steering
                 ) = run_test_scenario(attributes, choice, None)
                 score = 1 - harm
                 scores[choice].append(score)
-                scores_per_scenario.append(score)
                 score_pedestrian_harm = 1 - normalized_pedestrian_harm
                 scores_pedestrian_harm[choice].append(score_pedestrian_harm)
                 score_passenger_harm = 1 - normalized_passenger_harm
@@ -387,19 +305,14 @@ def run_scenarios(client, num_scenarios, winners, choices):
                 reaction_times.append(reaction_time)
                 turns_per_scenario[choice].append(turn)
 
-        max_score = max(scores_per_scenario)
-        min_score = min(scores_per_scenario)
-
-        # Normalize and add scores to the dictionary
-        for run_type, score in zip(choices, scores_per_scenario):
-            try:
-                normalized_score = (score - min_score) / (max_score - min_score)
-            except ZeroDivisionError:
-                normalized_score = (
-                    0.5  # Handle division by zero if max_score equals min_score
-                )
-            scores[run_type].append(normalized_score)
-
+                
+                normalized_scores = normalize_scores_at_each_index(scores[choice] for choice in choices)
+                normalized_pedestrian_scores = normalize_scores_at_each_index(scores_pedestrian_harm[choice] for choice in choices)
+                normalized_passenger_scores = normalize_scores_at_each_index(scores_passenger_harm[choice] for choice in choices)
+                for i , choice in enumerate(choices):
+                    scores[choice] = normalized_scores[i]
+                    scores_pedestrian_harm[choice] = normalized_pedestrian_scores[i]
+                    scores_passenger_harm[choice] = normalized_passenger_scores[i]
     return (
         scores,
         scores_pedestrian_harm,
@@ -454,8 +367,9 @@ if __name__ == "__main__":
     client.set_timeout(15)
     world = client.get_world()
     settings_setter(world)
-
-    filepaths = ["saved_genomes/golden ones/genome_25664_fitness_9209.538459962874.pkl"]
+    sns.set_theme(style="dark")
+    sns.set_palette("mako")
+    filepaths = ["saved_genomes/genome_9411_fitness_9029.82748334049.pkl"]
 
     # folder_path = 'saved_genomes'
 
@@ -474,9 +388,9 @@ if __name__ == "__main__":
     choices = list(winners.keys()) + [
         "left",
         "right",
-        "straight",
-    ]  # Add or remove choices as needed
-    # choices = ["manual"]
+        "straight"#,
+#        "manual"
+    ] 
 
     (
         overall_scores,
@@ -486,32 +400,28 @@ if __name__ == "__main__":
         all_turns,
         scenario_steering_data,
     ) = run_scenarios(client, num_scenarios, winners, choices)
-    print(scenario_steering_data)
+
     plot_steering_traces(scenario_steering_data)
-    # plt.figure()
-    # sns.histplot(reaction_times, kde=True)
-    # plt.title('Reaction Times of Manual Driver')
-    # plt.xlabel('Reaction Time (s)')
-    # plt.ylabel('Density')
-    # plt.savefig('plots/reaction_times.png')
-    # plt.show()
-    plot_average_scores(overall_scores, None)
-    plot_cumulative_scores(overall_scores, None)
-    plot_score_distribution(overall_scores, None)
-    plot_heatmap(overall_scores, None)
-    plot_scores(overall_scores, None)
-    plot_violin_scores(overall_scores, None)
+    # print(reaction_times)
+    # plot_reaction_times(reaction_times)
 
-    plot_average_scores(pedestrian_scores, "pedestrian_harm")
-    plot_cumulative_scores(pedestrian_scores, "pedestrian_harm")
-    plot_score_distribution(pedestrian_scores, "pedestrian_harm")
-    plot_heatmap(pedestrian_scores, "pedestrian_harm")
-    plot_scores(pedestrian_scores, "pedestrian_harm")
-    plot_violin_scores(pedestrian_scores, "pedestrian_harm")
+    # plot_average_scores(overall_scores, "Total Score")
+    # plot_cumulative_scores(overall_scores, "Total Score")
+    # plot_score_distribution(overall_scores, "Total Score")
+    # plot_heatmap(overall_scores, "Total Score")
+    # plot_scores(overall_scores, "Total Score")
+    # plot_violin_scores(overall_scores, "Total Score")
 
-    plot_average_scores(passenger_scores, "passenger_harm")
-    plot_cumulative_scores(passenger_scores, "passenger_harm")
-    plot_score_distribution(passenger_scores, "passenger_harm")
-    plot_heatmap(passenger_scores, "passenger_harm")
-    plot_scores(passenger_scores, "passenger_harm")
-    plot_violin_scores(passenger_scores, "passenger_harm")
+    # plot_average_scores(pedestrian_scores, "Pedestrian Score")
+    # plot_cumulative_scores(pedestrian_scores, "Pedestrian Score")
+    # plot_score_distribution(pedestrian_scores, "Pedestrian Score")
+    # plot_heatmap(pedestrian_scores, "Pedestrian Score")
+    # plot_scores(pedestrian_scores, "Pedestrian Score")
+    # plot_violin_scores(pedestrian_scores, "Pedestrian Score")
+
+    # plot_average_scores(passenger_scores, "Passenger Score")
+    # plot_cumulative_scores(passenger_scores, "Passenger Score")
+    # plot_score_distribution(passenger_scores, "Passenger Score")
+    # plot_heatmap(passenger_scores, "Passenger Score")
+    # plot_scores(passenger_scores, "Passenger Score")
+    # plot_violin_scores(passenger_scores, "Passenger Score")
