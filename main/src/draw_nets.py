@@ -10,7 +10,7 @@ config = neat.config.Config(
     config_path,
 )
 node_names = generate_node_names(MAX_PEDS, NUM_GROUPS)
-filepath = "saved_genomes/genome_9411_fitness_9029.82748334049.pkl"
+filepath = "saved_genomes/genome_1099_fitness_6817.873790403775.pkl"
 with open(filepath, "rb") as input_file:
         winner_net = pickle.load(input_file)
                     

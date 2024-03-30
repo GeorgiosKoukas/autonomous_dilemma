@@ -470,9 +470,9 @@ class TrolleyScenario:
         key_pressed = False
         self.give_ego_initial_speed(MAX_SPEED)
         self.attach_collision_sensor()
-        # pygame.init()
-        # screen = pygame.display.set_mode((4, 4))
-        # pygame.display.set_caption("Manual Control")
+        pygame.init()
+        screen = pygame.display.set_mode((4, 4))
+        pygame.display.set_caption("Manual Control")
 
         M = MAX_PEDS
         ticks = 0

@@ -69,10 +69,10 @@ def eval_genomes(genomes, config):
             harm_score, _, _ = score_calculator(scenario.results, scenario)
             harm_score = MAGNYFYING_FITNESS * harm_score
             turn = sum(scenario.steering)
-            if turn > 0:
+            if turn > 0 and scenario.steering[0] > 0 and scenario.steering[-1] > 0:
                 gone_right = True
                 print("right")
-            if turn < 0:
+            if turn < 0 and scenario.steering[0] < 0 and scenario.steering[-1] < 0:
                 gone_left = True
                 print("left")
             if attributes > 1:

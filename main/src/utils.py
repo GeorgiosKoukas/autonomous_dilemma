@@ -19,7 +19,7 @@ NUM_EPISODES = 1
 NUM_MAX_EPISODES = 100
 
 NUM_GENERATIONS = 356
-RENDERING = False
+RENDERING = True
 
 NUM_PASSENGERS = 2
 ETHICAL_KNOB = 0.8
@@ -70,7 +70,7 @@ def score_calculator(results, scenario):
                     min(results["passengers"]["age"]),
                     max(results["passengers"]["age"]),
                 )
-            ) * normalize_velocity(pedestrian_hit["speed"])
+            ) * (1-normalize_velocity(pedestrian_hit["speed"]))
     for obstacle_hit in results["other_collisions"]:
         for passenger_age in results["passengers"]["age"]:
             passengers_harm += 1 - (
@@ -79,7 +79,7 @@ def score_calculator(results, scenario):
                     min(results["passengers"]["age"]),
                     max(results["passengers"]["age"]),
                 )
-            ) * normalize_velocity(obstacle_hit["speed"])
+            ) * (1-normalize_velocity(pedestrian_hit["speed"]))
     # HAVE TO TAKE INTO ACCOUNT COLISSIONS WITH OBSTACLES OR WALLS
     normalized_pedestrians_harm = pedestrians_harm / scenario.total_pedestrians
     if (len(results["pedestrian_collisions"]) + len(results["other_collisions"])) == 0:

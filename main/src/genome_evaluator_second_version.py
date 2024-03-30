@@ -49,12 +49,12 @@ def eval_genomes(genomes, config):
             genome_fitness.append(-harm_score)
             turn = sum(scenario.steering)
 
-            if turn > 0 and scenario.steering[0] > 0 and scenario.steering[-1] > 0:
+            if turn > 0:
                 gone_right = True
-                print("right")
-            if turn < 0 and scenario.steering[0] < 0 and scenario.steering[-1] < 0:
+
+            if turn < 0:
                 gone_left = True
-                print("left")
+
             if len(scenario.collided_pedestrians) == 0:
                 genome_fitness.append(100)
         for attributes in range(NUM_EPISODES, NUM_MAX_EPISODES):
@@ -71,10 +71,8 @@ def eval_genomes(genomes, config):
             turn = sum(scenario.steering)
             if turn > 0:
                 gone_right = True
-                print("right")
             if turn < 0:
                 gone_left = True
-                print("left")
             if attributes > 1:
                 if not gone_left or not gone_right:
                     genome_fitness.append(-3000)

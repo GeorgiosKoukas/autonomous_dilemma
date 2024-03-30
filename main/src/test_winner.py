@@ -159,7 +159,7 @@ def plot_score_distribution(scores, score_type):
     df = pd.DataFrame(flattened_scores, columns=["Model", "Score"])
     cmap = sns.color_palette("mako", as_cmap=True)
     plt.figure(figsize=(10, 6))
-    sns.boxplot(x="Model", y="Score", data=df, cmap=cmap)
+    sns.boxplot(x="Model", y="Score", data=df)
     plt.title(f"{score_type} - Score Distribution of Models")
     plt.xlabel("Model")
     plt.ylabel("Score")
@@ -369,7 +369,7 @@ if __name__ == "__main__":
     settings_setter(world)
     sns.set_theme(style="dark")
     sns.set_palette("mako")
-    filepaths = ["saved_genomes/genome_9411_fitness_9029.82748334049.pkl"]
+    filepaths = ["saved_genomes/golden ones/genome_25664_fitness_9209.538459962874.pkl"]
 
     # folder_path = 'saved_genomes'
 
@@ -384,13 +384,13 @@ if __name__ == "__main__":
 
     winners = load_winner_nets(filepaths)
 
-    num_scenarios = 100
-    choices = list(winners.keys()) + [
-        "left",
-        "right",
-        "straight"#,
-#        "manual"
-    ] 
+    num_scenarios = 200
+    choices = list(winners.keys()) #+ [
+    #     "left",
+    #     "right",
+    #     "straight",
+    #     "manual"
+    # ] 
 
     (
         overall_scores,
@@ -402,26 +402,26 @@ if __name__ == "__main__":
     ) = run_scenarios(client, num_scenarios, winners, choices)
 
     plot_steering_traces(scenario_steering_data)
-    # print(reaction_times)
-    # plot_reaction_times(reaction_times)
+    print(reaction_times)
+    plot_reaction_times(reaction_times)
 
-    # plot_average_scores(overall_scores, "Total Score")
-    # plot_cumulative_scores(overall_scores, "Total Score")
-    # plot_score_distribution(overall_scores, "Total Score")
-    # plot_heatmap(overall_scores, "Total Score")
-    # plot_scores(overall_scores, "Total Score")
-    # plot_violin_scores(overall_scores, "Total Score")
+    plot_average_scores(overall_scores, "Total Score")
+    plot_cumulative_scores(overall_scores, "Total Score")
+    plot_score_distribution(overall_scores, "Total Score")
+    plot_heatmap(overall_scores, "Total Score")
+    plot_scores(overall_scores, "Total Score")
+    plot_violin_scores(overall_scores, "Total Score")
 
-    # plot_average_scores(pedestrian_scores, "Pedestrian Score")
-    # plot_cumulative_scores(pedestrian_scores, "Pedestrian Score")
-    # plot_score_distribution(pedestrian_scores, "Pedestrian Score")
-    # plot_heatmap(pedestrian_scores, "Pedestrian Score")
-    # plot_scores(pedestrian_scores, "Pedestrian Score")
-    # plot_violin_scores(pedestrian_scores, "Pedestrian Score")
+    plot_average_scores(pedestrian_scores, "Pedestrian Score")
+    plot_cumulative_scores(pedestrian_scores, "Pedestrian Score")
+    plot_score_distribution(pedestrian_scores, "Pedestrian Score")
+    plot_heatmap(pedestrian_scores, "Pedestrian Score")
+    plot_scores(pedestrian_scores, "Pedestrian Score")
+    plot_violin_scores(pedestrian_scores, "Pedestrian Score")
 
-    # plot_average_scores(passenger_scores, "Passenger Score")
-    # plot_cumulative_scores(passenger_scores, "Passenger Score")
-    # plot_score_distribution(passenger_scores, "Passenger Score")
-    # plot_heatmap(passenger_scores, "Passenger Score")
-    # plot_scores(passenger_scores, "Passenger Score")
-    # plot_violin_scores(passenger_scores, "Passenger Score")
+    plot_average_scores(passenger_scores, "Passenger Score")
+    plot_cumulative_scores(passenger_scores, "Passenger Score")
+    plot_score_distribution(passenger_scores, "Passenger Score")
+    plot_heatmap(passenger_scores, "Passenger Score")
+    plot_scores(passenger_scores, "Passenger Score")
+    plot_violin_scores(passenger_scores, "Passenger Score")

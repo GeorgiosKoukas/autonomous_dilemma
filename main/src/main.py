@@ -1,5 +1,5 @@
 from utils import *
-from genome_evaluator_first_version import eval_genomes
+from genome_evaluator_second_version import eval_genomes
 
 
 def run(config_path):
@@ -16,7 +16,7 @@ def run(config_path):
     if checkpoint_restorer:
         checkpoint = neat.Checkpointer(1, filename_prefix="neat-checkpoint-")
 
-        p = checkpoint.restore_checkpoint("neat-checkpoint-958")
+        p = checkpoint.restore_checkpoint("neat-checkpoint-877")
         p.add_reporter(neat.StdOutReporter(True))
         stats = neat.StatisticsReporter()
         p.add_reporter(stats)
