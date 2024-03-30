@@ -1,16 +1,16 @@
 # TrolleyScenario NEAT-based Autonomous Vehicle Simulation
 
-This repository contains a Python script for simulating autonomous vehicle scenarios using the NEAT (NeuroEvolution of Augmenting Topologies) algorithm. The script utilizes the CARLA simulator for creating realistic scenarios involving pedestrians and obstacles.
+This repository contains a Python script for producing and simulating autonomous vehicle scenarios using the NEAT (NeuroEvolution of Augmenting Topologies) algorithm. The script utilizes the CARLA simulator for creating realistic scenarios involving pedestrians and obstacles. 
 
 ## Getting Started
 
 ### Prerequisites
 - [CARLA Simulator](https://carla.org/) installed and running on your machine.
-- Python 3.x installed.
+- Python 3.6.X installed.
 - Required Python packages installed. You can install them using the following command:
 
     ```bash
-    pip install carla pandas neat-python matplotlib
+    pip install carla pandas neat-python matplotlib scipy networkx
 
 
 ### Usage
@@ -22,12 +22,16 @@ This repository contains a Python script for simulating autonomous vehicle scena
 
 2. Navigate to the project directory
 
-3. Run the simulation script
+3. Run the CARLA Simulator
+   
+3. Put the corresponding number port (usually "2000") and run the main.py script to produce neural networks 
+
+4. You can test the generated networks with the test_winner.py script
 
 
 ## Overview
 
-The `TrolleyScenario` class in the script represents a scenario where an autonomous vehicle (AV) navigates through a simulated environment populated with pedestrians and obstacles. The AV's decision-making is based on the NEAT algorithm, evolving neural networks to control the AV.
+The `TrolleyScenario` class in the script represents a scenario where an autonomous vehicle (AV) navigates through a simulated environment populated with pedestrians and an obstacle. The AV's decision-making is based on the NEAT algorithm, evolving neural networks to control the AV.
 
 ### Key Components
 
