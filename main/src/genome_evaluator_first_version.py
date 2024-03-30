@@ -41,7 +41,6 @@ def eval_genomes(genomes, config):
             # Generate the same scenario for each AV in the same generation
             scenario = TrolleyScenario(*scenario_attributes)
             scenario.run(net, "neat", "no")
-            # Use the results to determine the loss
             harm_score, _, _ = score_calculator(scenario.results, scenario)
             harm_score = MAGNYFYING_FITNESS * harm_score
             genome_fitness.append(-harm_score)
@@ -51,10 +50,10 @@ def eval_genomes(genomes, config):
             scenario_attributes = generation_scenarios[attributes]
 
             net = neat.nn.FeedForwardNetwork.create(genome, config)
-            # Generate the same scenario for each AV in the same generation
+
             scenario = TrolleyScenario(*scenario_attributes)
             scenario.run(net, "neat", "no")
-            # Use the results to determine the loss
+
 
             harm_score, _, _ = score_calculator(scenario.results, scenario)
             harm_score = MAGNYFYING_FITNESS * harm_score
@@ -79,12 +78,10 @@ def eval_genomes(genomes, config):
         genome.fitness = sum(genome_fitness)
         del scenario
         if genome.fitness > 4000:
-            # Specify a directory to save the genomes
+
             save_dir = "saved_genomes"
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-
-            # Construct a file name based on the genome ID and fitness
             filename = os.path.join(
                 save_dir, f"genome_{genome_id}_fitness_{genome.fitness}.pkl"
             )

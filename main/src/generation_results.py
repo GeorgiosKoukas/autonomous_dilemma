@@ -20,7 +20,6 @@ def calculate_max_depth(genome, config):
     # Initialize all node depths to 0
     node_depths = {node_key: 0 for node_key in genome.nodes.keys()}
 
-    # Continuously update depths until no changes occur
     changed = True
     while changed:
         changed = False
@@ -72,11 +71,10 @@ for i in range(NUMBER_OF_GENERATIONS):  # Looping through checkpoints
     # Approximated Hidden Layer Depth
     generation_max_depth = 0
     for genome_id, genome in p.population.items():
-        depth = calculate_max_depth(genome, p.config)  # Implement this function
+        depth = calculate_max_depth(genome, p.config)  
         generation_max_depth = max(generation_max_depth, depth)
     max_depth_per_generation.append(generation_max_depth)
 
-# Convert topological data to DataFrame
 df_topology = pd.DataFrame(topology_data)
 
 # Speciation Plot

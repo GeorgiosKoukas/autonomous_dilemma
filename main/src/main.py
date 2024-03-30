@@ -52,7 +52,7 @@ if __name__ == "__main__":
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, "config.txt")
 
-    # Update the value of num_inputs
+    
     config = ConfigObj(config_path, write_empty_values=True)
     num_inputs = NUM_GROUPS * MAX_PEDS * 3 + 2 + 1
     config["DefaultGenome"]["num_inputs"] = num_inputs
